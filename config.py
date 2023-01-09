@@ -18,7 +18,7 @@ class DefaultConfig:
         self.epoch = 800
         self.batch_size = 512 #350
         self.seq_len = 37  # the number of years in the data
-        self.house_size = 2 #350 # number of houses per year
+        self.house_size = 8596 # number of houses per year
         self.meta_size = 2
         self.update_len = 4
         self.train_ratio = 0.9
@@ -33,7 +33,6 @@ class LSTMConfig(DefaultConfig):
         self.dropout = 0
         self.seq_len = 50
         self.batch_size = 512
-        self.house_size = 2
         self.result_path = 'result_lstm/'
         self.model = 'LSTM_static(config)'
 
@@ -58,7 +57,6 @@ class TGCNConfig(DefaultConfig):
         self.gc1_outdim = 114
         self.gc2_outdim = 114
         self.seq_len = 55
-        self.house_size = 800
         self.result_path = 'result_tgcn/'
         self.model = 'T_GCN(config)'
 

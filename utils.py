@@ -44,7 +44,7 @@ def price_str(val_predict, val_target, val_listprice):
 
 def prepare_data(config):
     if not os.path.exists(config.data_path + 'features.npy') \
-            or not os.path.exists(config.data_path + 'labels.npy') or not os.path.exists(config.data_path + 'listprice.npy'):
+            or not os.path.exists(config.data_path + 'labels.npy'):
         features, labels, train_index, test_index = \
             load_data(path=config.data_path, month_len=config.seq_len, house_size=config.house_size, dataset=config.dataset)
         print('Data is generated.')

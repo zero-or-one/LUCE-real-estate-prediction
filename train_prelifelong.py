@@ -18,7 +18,6 @@ import math
 def make_index_batch(train_index, batch_size):
     # !!!
     month_len, house_size = train_index.shape
-    month_len, house_size = 1, 1
     train_index = torch.LongTensor(train_index)
     index_list = []
     for i in range(month_len):
@@ -166,9 +165,6 @@ def main(config):
         optimizer = torch.optim.Adam(model.parameters(), lr=args['lr'], weight_decay=args['weight_decay'])
         loss_criterion = nn.MSELoss()
         min_rmse = 10000
-        w_str = ''
-        with open(other_file_path + 'month' + str(cur_month) + '_price_list.csv', 'a+') as f:
-            f.write('index, list, target, pre, pre-target, list-target\n')
         
         # set the training cycle of each month's model to be the same
         for i in range(train_epoch*model_lstm_len):

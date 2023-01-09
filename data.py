@@ -44,9 +44,14 @@ def load_data(path, month_len, house_size, dataset):
     index = range(0, data_size)
     train_index = []
     test_index = []
+    """
+    for each months for each house we get the data
+    """
     for i in range(month_len - 1):
+        #train_index.append(index[i*house_size: (i+1)*house_size])
+        #test_index.append(index[(i+1)*house_size: (i+2)*house_size])
         train_index.append(index[i*house_size: (i+1)*house_size])
-        test_index.append(index[(i+1)*house_size: (i+2)*house_size])
+
     train_index = np.array(train_index)
     test_index = np.array(test_index)
 

@@ -67,7 +67,7 @@ if __name__ == '__main__':
     df = df.drop(drop_col, axis=1)
 
     # Debugging
-    df = df.head(200)
+    df = df.head(17192)
 
     # create meta path and construct graph
     house_meta = ['house', 'area_index', 'households', 'pyeong_type', 'supply_area_rep',
@@ -100,6 +100,8 @@ if __name__ == '__main__':
     # move the target column to the last
     end_col = ['price', 'house', 'year']
     df = df[[c for c in df if c not in end_col] + [c for c in end_col if c in df]]
+    df = df.sort_values(by='year')
+    print("Number of houses per year is", len(df['year']==2007))
 
     # save the data
     df.to_csv('./data/processed_data.csv', index=False)
