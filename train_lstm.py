@@ -32,7 +32,7 @@ if __name__ == '__main__':
     logger = Logger(result_path, result_path + 'model_saved/', result_path + 'others/')
     logger.save_parameters(config)
 
-    _, features, labels, listprice, train_index, test_index = prepare_data(config)
+    _, features, labels, train_index, test_index = prepare_data(config)
 
     train_epoch = config.epoch
     seq_len = config.seq_len
@@ -42,17 +42,17 @@ if __name__ == '__main__':
     house_size = config.house_size
     config.nfeat = input_dim
 
-    train_index = range(8000)
-    test_index = range(8000, 8596)
+    data_len = features.shape[0]
+    train_len = int(data_len * config.train_ratio)
+    train_index = range(train_len)
+    test_index = range(data_len-train_len, data_len)
 
     features = torch.tensor(features).to(device)
     labels = torch.tensor(labels).to(device)
-    listprice = torch.tensor(listprice).to(device)
     train_index = torch.LongTensor(train_index).to(device)
     test_index = torch.LongTensor(test_index).to(device)
     print('features: ' + str(features.shape))
     print('labels: ' + str(labels.shape))
-    print('listprice: ' + str(listprice.shape))
     print('train_index: ' + str(train_index.shape))
     print('test_index: ' + str(test_index.shape))
 
@@ -74,14 +74,13 @@ if __name__ == '__main__':
         model.train()
         optimizer.zero_grad()   # Gradient zeroing
         out_price = model(features)  # forward() function in LSTMs, graph convolution operation
-        print('out_price:' + str(out_price.shape))
-        print('labels[train_index]:' + str(labels[train_index].shape))
+        #print('out_price:' + str(out_price.shape))
+        #print('labels[train_index]:' + str(labels[train_index].shape))
         loss = loss_criterion(out_price[train_index, 0], labels[train_index, 0])  # loss calculation, pre and target
         loss.backward()     # backward propagation calculation
         optimizer.step()    # model parameter update
         training_loss.append(loss.detach().cpu().numpy())
         avg_training_loss = sum(training_loss) / len(training_loss)
-        print("Epoch:{}  Training loss:{}".format(i, avg_training_loss))
         logger.log_training(i, avg_training_loss)
 
         # Evaluation of the trained model
@@ -90,7 +89,6 @@ if __name__ == '__main__':
             out_test_price = model(features)
             val_predict = out_test_price[test_index].detach().cpu().numpy()
             val_target = labels[test_index].cpu().numpy()
-            val_listprice = listprice[test_index].cpu().numpy()
             mse, mae, rmse = score(val_predict, val_target)
             y_pre_error, pred_acc = pre_error(val_predict, val_target)
             if rmse < min_rmse:
@@ -99,12 +97,9 @@ if __name__ == '__main__':
                 max_pred_acc = pred_acc
                 output = val_predict
                 logger.save_model(model, optimizer, i)
-                w_str = price_str(val_predict, val_target, val_listprice)
         end_time = time.time()
         cost_time = end_time-start_time
-        # print(w_str)
-        print("Test MSE: {} MAE:{} RMSE: {} pre_error:{} cost_time:{}".format(mse,mae,rmse,y_pre_error,cost_time))
-        logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time, w_str)
+        logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time)
 
-    print("MAE:{} RMSE: {} R2_score:{}\n".format(mae, rmse, max_pred_acc),flush=True)
+    print("MAE:{} RMSE: {} R2_score:{}\n".format(mae, rmse, max_pred_acc))
 

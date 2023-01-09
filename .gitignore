@@ -19,3 +19,4 @@ __pycache__/
 # Log
 events.out.tfevents*
 results/*
+data/*

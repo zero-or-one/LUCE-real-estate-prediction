@@ -43,22 +43,22 @@ def price_str(val_predict, val_target, val_listprice):
     return w_str
 
 def prepare_data(config):
-    if not os.path.exists(config.data_path + 'adj.npy') or not os.path.exists(config.data_path + 'features.npy') \
+    if not os.path.exists(config.data_path + 'features.npy') \
             or not os.path.exists(config.data_path + 'labels.npy') or not os.path.exists(config.data_path + 'listprice.npy'):
-        features, labels, listprice, train_index, test_index = \
-            load_data(path=config.data_path, month_len=config.seq_len, house_size=config.house_size)
+        features, labels, train_index, test_index = \
+            load_data(path=config.data_path, month_len=config.seq_len, house_size=config.house_size, dataset=config.dataset)
         print('Data is generated.')
     else:
         features = np.load(config.data_path + 'features.npy')
         labels = np.load(config.data_path + 'labels.npy')
-        listprice = np.load(config.data_path + 'listprice.npy')
         train_index = np.load(config.data_path + 'train_index.npy', allow_pickle=True)
         test_index = np.load(config.data_path + 'test_index.npy', allow_pickle=True)
         print('Data is loaded.')
-    adj = np.load(config.data_path + 'adj.npy')
-    print('adj: ' + str(adj.shape))
+    adj = [np.load(config.data_path + 'adjacency_house.npy'), np.load(config.data_path + 'adjacency_geo.npy')]
+    # not working
+    #adj = [np.load(config.data_path + 'adjacency_house.npz')['data'], np.load(config.data_path + 'adjacency_geo.npz')['data']]
+    print('adj: ' + str(adj[0].shape))
     print('features: ' + str(features.shape))
     print('labels: ' + str(labels.shape))
-    print('listprice: ' + str(listprice.shape))
     print('***********************************************************')
-    return adj, features, labels, listprice, train_index, test_index
+    return adj, features, labels, train_index, test_index

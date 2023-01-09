@@ -23,39 +23,24 @@ def encode_onehot(labels):
     return labels_onehot
 
 
-def load_data(path, month_len, house_size):
+def load_data(path, month_len, house_size, dataset):
     # Ensure that the number of houses (house_size) in each month is equal, data_size = month_len * house_size
     print('Loading data...')
 
     #idx_features_labels = np.genfromtxt("{}n_feature.txt".format(path), dtype=np.float32)
-    idx_features_labels = pd.read_csv("{}dummy_preproc.csv".format(path), dtype=np.float32).values
+    idx_features_labels = pd.read_csv("{}{}".format(path, dataset), dtype=np.float32).values
 
     feature_size = idx_features_labels.shape[1]     # feature dimension
     data_size = idx_features_labels.shape[0]        # Total number of houses for all months
 
-    features = idx_features_labels[:, 0:feature_size-2]  # Features, remove listing price and transaction price
-    listprice = idx_features_labels[:, -3]              # List price (temporarily unused during training)
-    labels = idx_features_labels[:, -2]                 # final price
-    listprice = listprice[:, np.newaxis]
+    features = idx_features_labels[:, 0:feature_size-3]  # Features, remove listing price and transaction price
+    labels = idx_features_labels[:, -3]                 # final price
     labels = labels[:, np.newaxis]                      # Column vector to column vector matrix
-
-
-    # Add index to the last dimension of listprice
-    index = np.array(range(0, data_size)).T
-    index = index[:, np.newaxis]
-    listprice = np.hstack((listprice, index))
 
     print('feature size: ' + str(features.shape))
     print('label size: ' + str(labels.shape))
-    print('listprice size: ' + str(listprice.shape))
 
-    df = pd.read_csv("{}dataset_realestate.csv".format(path))
-    G = create_dummy_adj(df)
-    adj = nx.to_numpy_matrix(G) # MYBE WRONG
-    adj = adj + np.eye(adj.shape[0])  # Add self-loop
-    #adj = normalize(adj, diag_lambda=1.0)  # Row-normalize
-
-     # Create indexes for training and test sets
+    # Create indexes for training and test sets
     index = range(0, data_size)
     train_index = []
     test_index = []
@@ -65,14 +50,12 @@ def load_data(path, month_len, house_size):
     train_index = np.array(train_index)
     test_index = np.array(test_index)
 
-    np.save(path + 'adj.npy', adj)
     np.save(path + 'features.npy', features)
     np.save(path + 'labels.npy', labels)
-    np.save(path + 'listprice.npy', listprice)
     np.save(path + 'train_index.npy', train_index)
     np.save(path + 'test_index.npy', test_index)
 
-    return features, labels, listprice, train_index, test_index
+    return features, labels, train_index, test_index
 
 
 def normalize(mx, diag_lambda):
@@ -121,58 +104,3 @@ def npz2array(metapath, filepath):
     data = sparse_mx_to_torch_sparse_tensor(data)
     print(metapath+": "+str(data.shape))
     return data
-
-def create_dummy_adj(df, G=None):
-    if G is None:
-        G = nx.Graph()
-    for i, row in df.iterrows():
-        G.add_node(row['Unnamed: 0'])
-        G.add_node(row['house'])
-        G.add_node(row['danji_id'])
-        G.add_node(row['danji_x'])
-        G.add_node(row['area_index'])
-        G.add_node(row['households'])
-        G.add_node(row['pyeong_type'])
-        G.add_node(row['supply_area_rep'])
-        G.add_node(row['supply_area'])
-        G.add_node(row['supply_pyeong_rep'])
-        G.add_node(row['supply_pyeong'])
-        G.add_node(row['private_area'])
-        G.add_node(row['private_pyeong'])
-        G.add_node(row['private_area_rate'])
-        G.add_node(row['entrance_type_x'])
-        G.add_node(row['room_count'])
-        G.add_node(row['bathroom_count'])
-        G.add_node(row['average_maintenance_cost'])
-        G.add_node(row['average_summer_maintenance_cost'])
-        G.add_node(row['average_winter_maintenance_cost'])
-        #G.add_node(row['updated_at'])
-        #G.add_node(row['migrated_at'])
-        #G.add_node(row['danji_id_hash'])
-        #G.add_node(row['construct_date'])
-        G.add_node(row['total_households'])
-        
-        
-        G.add_edge(row['Unnamed: 0'], row['house'])
-        G.add_edge(row['Unnamed: 0'], row['danji_id'])
-        G.add_edge(row['Unnamed: 0'], row['danji_x'])
-        G.add_edge(row['Unnamed: 0'], row['area_index'])
-        G.add_edge(row['Unnamed: 0'], row['households'])
-        G.add_edge(row['Unnamed: 0'], row['pyeong_type'])
-        G.add_edge(row['Unnamed: 0'], row['supply_area_rep'])
-        G.add_edge(row['Unnamed: 0'], row['supply_area'])
-        G.add_edge(row['Unnamed: 0'], row['supply_pyeong_rep'])
-        G.add_edge(row['Unnamed: 0'], row['supply_pyeong'])
-        G.add_edge(row['Unnamed: 0'], row['private_area'])
-        G.add_edge(row['Unnamed: 0'], row['private_pyeong'])
-        G.add_edge(row['Unnamed: 0'], row['private_area_rate'])
-        G.add_edge(row['Unnamed: 0'], row['room_count'])
-        G.add_edge(row['Unnamed: 0'], row['bathroom_count'])
-        G.add_edge(row['Unnamed: 0'], row['average_maintenance_cost'])
-        G.add_edge(row['Unnamed: 0'], row['average_summer_maintenance_cost'])
-        G.add_edge(row['Unnamed: 0'], row['average_winter_maintenance_cost'])
-        G.add_edge(row['Unnamed: 0'], row['bathroom_count'])
-        G.add_edge(row['Unnamed: 0'], row['total_households'])        
-        
-    return G
-

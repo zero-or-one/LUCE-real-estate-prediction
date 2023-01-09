@@ -7,19 +7,21 @@ class DefaultConfig:
     def __init__(self, device):
         self.device = device
         self.data_path = './data/'
+        self.dataset = 'processed_data.csv'
         self.result_path = 'result/'
-        self.lstm_input_size = 105
+        self.lstm_inputdim = 105
         self.input_size = 105
-        self.gc1_outdim = 105
-        self.gc2_outdim = 105
+        self.gc1_outdim = 100
+        self.gc2_outdim = 100
         self.layers = 1
         self.dropout = 0.2
         self.epoch = 800
-        self.batch_size = 350
-        self.seq_len = 37
-        self.house_size = 350
-        self.meta_size = 1
+        self.batch_size = 512 #350
+        self.seq_len = 37  # the number of years in the data
+        self.house_size = 2 #350 # number of houses per year
+        self.meta_size = 2
         self.update_len = 4
+        self.train_ratio = 0.9
         self.lr = 1e-3
         self.weight_decay = 5e-4
         self.loss = 'nn.MSELoss()'
@@ -30,7 +32,8 @@ class LSTMConfig(DefaultConfig):
         self.input_size = 114
         self.dropout = 0
         self.seq_len = 50
-        self.house_size = 2149
+        self.batch_size = 512
+        self.house_size = 2
         self.result_path = 'result_lstm/'
         self.model = 'LSTM_static(config)'
 
@@ -57,7 +60,7 @@ class TGCNConfig(DefaultConfig):
         self.seq_len = 55
         self.house_size = 800
         self.result_path = 'result_tgcn/'
-        self.model = 'model = T_GCN(config)'
+        self.model = 'T_GCN(config)'
 
 class PrelifelongConfig(DefaultConfig):
     def __init__(self, device):

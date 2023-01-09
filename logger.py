@@ -29,20 +29,29 @@ class Logger():
         torch.save(model.state_dict(), self.model_file_path+'model_'+str(epoch)+'.pkl')
         torch.save(optimizer.state_dict(), self.model_file_path+'optimizer_'+str(epoch)+'.pkl')
 
-    def log_testing(self, epoch, mse, mae, rmse, y_pre_error, cost_time, w_str):
+    def log_testing(self, epoch, mse, mae, rmse, y_pre_error, cost_time, w_str=None):
         with open(self.result_file_path+'loss_error.txt', 'a+') as f:
             f.write("Test MSE: {} MAE:{} RMSE: {} pre_error:{} cost_time:{}\n".format(mse,mae,rmse,y_pre_error,cost_time))
         with open(self.other_file_path + 'valid_RMSE.txt', 'a+') as f:
             f.write("{}\n".format(rmse))
         with open(self.other_file_path + 'pre_error.txt', 'a+') as f:
             f.write("{}\n".format(y_pre_error))
-        with open(self.other_file_path+'price_list.csv', 'w') as f:
-            f.write('index, list, target, pre, pre-target, list-target\n')
-            f.write(w_str)
+        if w_str is not None:
+            with open(self.other_file_path+'price_list.csv', 'w') as f:
+                f.write('index, list, target, pre, pre-target, list-target\n')
+                f.write(w_str)
+        print("Test MSE: {} MAE:{} RMSE: {} pre_error:{} cost_time:{}".format(mse, mae, rmse, y_pre_error, cost_time))
     
     def log_training(self, epoch, avg_training_loss):
         with open(self.result_file_path+'loss_error.txt', 'a+') as f:
             f.write("Epoch:{}  Training loss:{}\n".format(epoch, avg_training_loss))
         with open(self.other_file_path+'train_loss.txt', 'a+') as f:
             f.write("{}\n".format(avg_training_loss))
+        print("Epoch:{}  Training loss:{}".format(epoch, avg_training_loss))
+    '''
+    # we don't actually need it
+    def log_monthly_price(self, w_str, cur_month):
+        with open(self.other_file_path + 'month' + str(cur_month) + '_price_list.csv', 'a+') as f:
+                    f.write(w_str)
+    '''
     
