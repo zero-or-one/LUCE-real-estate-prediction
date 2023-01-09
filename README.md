@@ -1,5 +1,5 @@
 # Lifelong Property Price Prediction
-Implementation of [LUCE](https://arxiv.org/abs/2008.05880) paper
+Implementation of [LUCE paper](https://arxiv.org/abs/2008.05880)
 
 
 
