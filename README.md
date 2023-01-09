@@ -1,4 +1,4 @@
-# Lifelong Property Price Prediction: A Case Study for the Toronto Real Estate Market
+# Lifelong Property Price Prediction
 Implementation of [LUCE](https://arxiv.org/abs/2008.05880) paper
 
 
