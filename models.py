@@ -31,9 +31,10 @@ class GraphConvolution(nn.Module):
             self.bias.data.uniform_(-stdv, stdv)
 
     def forward(self, input, adj):
-        support = torch.mm(input, self.weight)
-        adj = adj + torch.eye(adj.shape[0],adj.shape[0]).to(input.device)  # A+I
-        output = torch.spmm(adj, support)
+        support = torch.mm(input.float(), self.weight.float())
+        adj = adj + torch.eye(adj.shape[0],adj.shape[0]).to(input.device).float()  # A+I
+        #print(adj.type(), support.type())
+        output = torch.spmm(adj.float(), support)
         if self.bias is not None:
             return output + self.bias
         else:
@@ -46,18 +47,18 @@ class GraphConvolution(nn.Module):
 
 
 class GCN2lv(nn.Module):
-    def __init__(self, config):
+    def __init__(self, nfeat, gc1_outdim, gc2_outdim, dropout, meta_size):
         super(GCN2lv, self).__init__()
-        self.meta_size = config.meta_size
-        self.gc1_outdim = config.gc1_outdim
-        self.gc2_outdim = config.gc2_outdim
-        # Use Variable to introduce weight
+        self.meta_size = meta_size
+        self.gc1_outdim = gc1_outdim
+        self.gc2_outdim = gc2_outdim
+        # 用Variable引入权重
         self.W = Parameter(torch.FloatTensor(self.meta_size, 1))
         nn.init.xavier_uniform_(self.W.data)
 
-        self.gc1 = GraphConvolution(config.nfeat, gc1_outdim)
+        self.gc1 = GraphConvolution(nfeat, gc1_outdim)
         self.gc2 = GraphConvolution(gc1_outdim, gc2_outdim)
-        self.dropout = config.dropout
+        self.dropout = dropout
 
     def forward(self, adj, x):
         # Each meta-graph is passed to GCN separately
@@ -81,20 +82,21 @@ class GCN2lv(nn.Module):
 
 # Public LSTM version
 class r_gcn2lv_1LSTMs(nn.Module):
-    def __init__(self, config):
+    def __init__(self, gcn_input_dim, gc1_out_dim, lstm_input_dim, hidden_dim,
+                 label_out_dim, meta_size, all_month, month_len, layers=1, dropout=0.2):
         super(r_gcn2lv_1LSTMs, self).__init__()
-        self.hidden_dim = config.hidden_dim
-        self.meta_size = config.meta_size
-        self.all_month = config.all_month
-        self.month_len = config.month_len
+        self.hidden_dim = hidden_dim
+        self.meta_size = meta_size
+        self.all_month = all_month
+        self.month_len = month_len
         self.glstm_list = []
         for i in range(month_len):
-            self.glstm_list.append(GCN2lv(nfeat=config.gcn_input_dim, gc1_outdim=config.gc1_out_dim, gc2_outdim=config.lstm_input_dim,
-                                          dropout=config.dropout, meta_size=meta_size))
+            self.glstm_list.append(GCN2lv(nfeat=gcn_input_dim, gc1_outdim=gc1_out_dim, gc2_outdim=lstm_input_dim,
+                                          dropout=dropout, meta_size=meta_size))
         self.glstm = nn.ModuleList(self.glstm_list)
-        self.lstm = nn.LSTM(input_size=config.lstm_input_dim, hidden_size=self.hidden_dim, num_layers=config.layers)
-        # self.linear_gcn = nn.Linear(hidden_dim, gcn_input_dim)  # Temporary input and input dimensions are consistent, and can be adjusted later
-        self.linear_price = nn.Linear(config.gcn_input_dim, config.label_out_dim)
+        self.lstm = nn.LSTM(input_size=lstm_input_dim, hidden_size=self.hidden_dim, num_layers=layers)
+        # self.linear_gcn = nn.Linear(hidden_dim, gcn_input_dim)  # 暂时输入输入维度一致，后续可再调整
+        self.linear_price = nn.Linear(gcn_input_dim, label_out_dim)
         self.LeakyReLU = nn.LeakyReLU(0.2)
 
     def forward(self, adj, x, y_index):
