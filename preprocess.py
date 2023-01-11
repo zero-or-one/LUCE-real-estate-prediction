@@ -68,7 +68,8 @@ if __name__ == '__main__':
     df = df.drop(drop_col, axis=1)
 
     # Debugging
-    df = df.head(17192)
+    #df = df.head(17192)
+    
     if args.create_adj:
         # create meta path and construct graph
         house_meta = ['house', 'area_index', 'households', 'pyeong_type', 'supply_area_rep',
