@@ -35,7 +35,6 @@ python train_prelifelong.py
 ```
 
 ### Things to improve
-Here are the things that will be good to improve.
 * Make the script to train the model end-to-end
 * Creation of adjacency matrix is of O(n^2) complexity. Optimization will save a lot of time 
 * Keep adjacecny matrices in scipy.sparse form as it takes less space
