@@ -24,9 +24,6 @@ python preprocess.py
 ### Training the model
 Specify the parameters in required class in config.py
 ```
-# create adjacency matrix and one hot encoding
-python preprocess.py
-
 # train lstm model independently
 python train_lstm.py
 
