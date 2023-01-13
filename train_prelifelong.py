@@ -16,6 +16,7 @@ import math
 
 # month * house => month * batch_num * batch_size
 def make_index_batch(train_index, batch_size):
+    #print(train_index.shape)
     month_len, house_size = train_index.shape
     train_index = torch.LongTensor(train_index)
     index_list = []
@@ -160,7 +161,8 @@ def main(config):
                 training_loss = []
                 validation_losses = []
                 model.train()
-                optimizer.zero_grad() 
+                optimizer.zero_grad()
+                #print(train_index_p[b].shape, features.shape, adj.shape)
                 new_embedding, out_price = model(adj, features, train_index_p[b])
                 new_embedding = Variable(new_embedding.data, requires_grad=True)
                 loss = loss_criterion(out_price, Y_train_batch[b])

@@ -100,5 +100,5 @@ if __name__ == '__main__':
         end_time = time.time()
         cost_time = end_time-start_time
         logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time)
-    print("MAE:{} RMSE: {} R2_score:{}\n".format(mae, rmse, max_pred_acc),flush=True)
+    print("MAE:{} RMSE: {} R2_score:{}\n".format(mae, rmse, max_pred_acc))
 

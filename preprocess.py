@@ -18,9 +18,13 @@ def construct_graph_from_df(df, G=None, hid='house'):
     if G is None:
         G = nx.Graph()
     l = list(df.columns)
+    done_house = []
     l.remove(hid)
     for _, row in df.iterrows():
+        if row[hid] in done_house:
+            continue
         G.add_node(row[hid])
+        done_house.append(row[hid])
         for col in l:
             G.add_node(row[col])
             G.add_edge(row[hid], row[col])
@@ -56,8 +60,9 @@ def apply_PC(A):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path" , type=str, default='./data/dataset_realestate.csv')
-    parser.add_argument("--create_adj", type=bool, default=True)
+    parser.add_argument("--create_adj", type=int, default=1)
     args = parser.parse_args()
+
     df = pd.read_csv(args.data_path, index_col=False)
     df = df.dropna()
     df['year'] = pd.DatetimeIndex(df['yyyymmdd']).year
@@ -66,10 +71,34 @@ if __name__ == '__main__':
     drop_col = ['building_type', 'Unnamed: 0', 'compare', 'updated_at', 'yyyymmdd',
         'migrated_at', 'Unnamed: 0_y', 'construct_date']
     df = df.drop(drop_col, axis=1)
+    df = df.reset_index(drop=True)
 
-    # Debugging
-    #df = df.head(17192)
+    # sort the dataframe by year and remove uniques
+    df = df.sort_values(by='year')
+    max_num_house = df.house.nunique()
+    exists = []
+    for i in df.index:
+        if (df.loc[i, 'house'], df.loc[i, 'year']) in exists:
+            df = df.drop(i, axis=0)
+        else:
+            exists.append((df.loc[i, 'house'], df.loc[i, 'year']))
     
+    df = df.reset_index(drop=True)
+
+    years = []
+    for i in range(2006, 2023):
+        years.append(len(df.loc[df['year']==i]))
+    max_house_num = max(years)
+    max_year = years.index(max_house_num) + 2006
+    print("The maximum number of houses in a year is {}, year {}".format(max_house_num, max_year))
+
+    for i in range(2006, 2023):
+        if len(df.loc[df['year']==i]) < max_house_num:
+            num = max_house_num-len(df.loc[df['year']==i])
+            row = df.loc[df['year']==i].loc[[df.loc[df['year']==i].index[0]]]
+            df = df.append([row] * num, ignore_index=True)
+    df = df.sort_values(by='year')
+    df = df.reset_index(drop=True)
     if args.create_adj:
         # create meta path and construct graph
         house_meta = ['house', 'area_index', 'households', 'pyeong_type', 'supply_area_rep',
@@ -107,8 +136,6 @@ if __name__ == '__main__':
     # move the target column to the last
     end_col = ['price', 'house', 'year']
     df = df[[c for c in df if c not in end_col] + [c for c in end_col if c in df]]
-    df = df.sort_values(by='year')
-    print("Number of houses per year is", len(df['year']==2007))
 
     # save the data
     df.to_csv('./data/processed_data.csv', index=False)
