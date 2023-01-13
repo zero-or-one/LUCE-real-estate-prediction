@@ -122,7 +122,7 @@ def main(config):
 
         elif 1 < cur_month <= update_len:     # current month is within the update range
             #parameter inheritance
-            old_model = torch.load(model_file_path + 'month' + str(cur_month - 1) + '.pkl')
+            old_model = torch.load(config.result_path + 'model_saved/' + 'month' + str(cur_month - 1) + '.pkl')
             model_dict = model.state_dict()
             # all existing parameters are inherited, including LSTM and GCN of each month
             state_dict = {k: v for k, v in old_model.items() if k in model_dict.keys()}
@@ -137,7 +137,7 @@ def main(config):
     
         elif cur_month > update_len:  #  current month is out of the update range
             # parameter inheritance
-            old_model = torch.load(model_file_path + 'month' + str(cur_month - 1) + '.pkl')
+            old_model = torch.load(config.result_path + 'model_saved/' + 'month' + str(cur_month - 1) + '.pkl')
             model_dict = model.state_dict()
             # all existing parameters are inherited, including LSTM and GCN of each month
             state_dict = {k: v for k, v in old_model.items() if k in model_dict.keys()}
@@ -186,10 +186,11 @@ def main(config):
                         min_rmse = rmse
                         output = val_predict
                         # we save model monthly
-                        torch.save(model.state_dict(), model_file_path + 'month' + str(cur_month) + '.pkl')
+                        torch.save(model.state_dict(), config.data_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
                 end_time = time.time()
                 cost_time = end_time - start_time
                 logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time)
+        torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
 
 
 if __name__ == '__main__':
