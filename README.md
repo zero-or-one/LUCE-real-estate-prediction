@@ -1,5 +1,6 @@
-# Lifelong Property Price Prediction
-Implementation of [LUCE paper](https://arxiv.org/abs/2008.05880)
+# Real Estate Price Prediction
+Implementation of several real estate prediction papers:
+1. PDVM: https://link.springer.com/article/10.1007/s41688-018-0027-0
 
 
 
@@ -16,30 +17,20 @@ pip install -r requirements.txt
 ```
 
 ### Preprocess
-Create adjacency matrix and one hot encoding
 ```
-python preprocess.py --data_path $path_to_csv_dataset --create_adj $wheither_to_produce_adj
+python preprocess.py
 ```
 
 ### Training the model
+Go to the desired model directory \
 Specify the parameters in required class in config.py
 ```
-# train lstm model independently
-python train_lstm.py
-
-# train gcn model independently
-python train.py --config $gcn_config
-
-# train prelifelong model
-python train_prelifelong.py
+python train.py
 ```
 
-### Things to improve
-* Make the script to train the model end-to-end
-* Creation of adjacency matrix is of O(n^2) complexity. Optimization will save a lot of time 
-* Keep adjacecny matrices in scipy.sparse form as it takes less space
-
+### Results
+| Model | MAE | MAPE |
+|-------|--|--|
+| PDVM | 35756 | 39 |
 
 ### Reference
-* Official Implementation: https://github.com/RingBDStack/LUCE
-
