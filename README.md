@@ -31,6 +31,6 @@ python train.py
 ### Results
 | Model | MAE | MAPE |
 |-------|--|--|
-| PDVM | 35756 | 39 |
+| PDVM | 40721 | 44.61 |
 
 ### Reference
