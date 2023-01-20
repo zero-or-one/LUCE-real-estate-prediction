@@ -12,7 +12,7 @@ class DefaultConfig:
         self.distance_limit = 2 # maximum distance between two points
 
         # Model parameters
-        self.input_dim = 302
+        self.input_dim = 303
         self.init_hidden_dim = 256
         self.hidden_dim = 128
         self.num_layers = 2

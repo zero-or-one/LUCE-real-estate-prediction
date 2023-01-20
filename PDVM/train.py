@@ -28,16 +28,23 @@ if __name__ == '__main__':
     # Load data
     df = pd.read_csv(config.data_path + config.dataset)
     if config.year == 'all':
-        pass
+        # we choose all years and remove duplicate houses
+        for i in list(set(df.year)):
+            df_year = df[df['year'] == i]
+            df_year = df_year.drop_duplicates(subset=['house'], keep='last')
+            if i == list(set(df.year))[0]:
+                df = df_year
+            else:
+                df = pd.concat((df, df_year))
     else:
         # we choose only 1 year
         df = df[df['year'] == config.year]
-    # remove duplicate houses
-    df = df.drop_duplicates(subset=['house'], keep='last')
+        # remove duplicate houses
+        df = df.drop_duplicates(subset=['house'], keep='last')
     lons = df['lon_x'].values
     lats = df['lat_y'].values
     prices = df['price'].values
-    df = df.drop(['lon_x', 'lat_y', 'price', 'year', 'house'], axis=1)
+    df = df.drop(['lon_x', 'lat_y', 'price', 'house'], axis=1)
     df = df.values.astype(np.float32)
 
     # Prepare data for training
