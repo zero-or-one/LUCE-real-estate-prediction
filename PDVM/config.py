@@ -8,7 +8,7 @@ class DefaultConfig:
 
         # Data parameters
         self.K = 7 # number of nearest neighbors, preferably odd
-        self.year = 2016 # maximum amount of samples in this year
+        self.year = 'all' # maximum amount of samples in 2016
         self.distance_limit = 2 # maximum distance between two points
 
         # Model parameters

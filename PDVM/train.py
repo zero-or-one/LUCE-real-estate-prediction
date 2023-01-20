@@ -27,8 +27,11 @@ if __name__ == '__main__':
 
     # Load data
     df = pd.read_csv(config.data_path + config.dataset)
-    # we choose only 1 year
-    df = df[df['year'] == config.year]
+    if config.year == 'all':
+        pass
+    else:
+        # we choose only 1 year
+        df = df[df['year'] == config.year]
     # remove duplicate houses
     df = df.drop_duplicates(subset=['house'], keep='last')
     lons = df['lon_x'].values
