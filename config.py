@@ -16,9 +16,9 @@ class DefaultConfig:
         self.layers = 1
         self.dropout = 0.2
         self.epoch = 800
-        self.batch_size = 1024 #350
+        self.batch_size = 64 #350
         self.seq_len = 17  # the number of years in the data
-        self.house_size = 120 # number of houses per year
+        self.house_size = 184 # number of houses per year
         self.meta_size = 2
         self.update_len = 4
         self.train_ratio = 0.9

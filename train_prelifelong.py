@@ -16,7 +16,6 @@ import math
 
 # month * house => month * batch_num * batch_size
 def make_index_batch(train_index, batch_size):
-    #print(train_index.shape)
     month_len, house_size = train_index.shape
     train_index = torch.LongTensor(train_index)
     index_list = []
@@ -70,7 +69,7 @@ def main(config):
     # data batch processing
     train_index_batch = make_index_batch(train_index, batch_size)
     print("train_index_batch: " + str(train_index_batch.shape))
-    test_index_batch = make_index_batch(test_index, house_size)
+    test_index_batch = make_index_batch(test_index, batch_size)
     print("test_index_batch: " + str(test_index_batch.shape))
     # tensorization
     train_index_batch = train_index_batch.to(device)
@@ -84,6 +83,7 @@ def main(config):
         # A month corresponds to a model model, and parameters are updated in the model of this month; cur_month represents the last month of the current training
          # r_gcnLSTMs starts training from the first month of data input each time, and gradually expands the model to the length of cur_month
          # According to update_len, when cur_month exceeds update_len, only update the parameters of [cur_month-update_len: cur_month] month each time
+        '''
         if cur_month <= update_len:
             model_lstm_len = cur_month
             train_index_p = train_index_batch[:, 0: cur_month, :]
@@ -92,6 +92,10 @@ def main(config):
             model_lstm_len = update_len
             train_index_p = train_index_batch[:, cur_month - model_lstm_len: cur_month, :]
             test_index_p = test_index_batch[:, cur_month - model_lstm_len: cur_month, :]
+        '''
+        model_lstm_len = cur_month
+        train_index_p = train_index_batch[:, cur_month, :].unsqueeze(1)
+        test_index_p = test_index_batch[:, cur_month, :].unsqueeze(1)
 
         #print('train_index_p: ' + str(train_index_p.shape))
         #print('test_index_p: ' + str(test_index_p.shape))
@@ -105,7 +109,7 @@ def main(config):
         model = r_gcn2lv_1LSTMs(gcn_input_dim=feature_size, gc1_out_dim=gc1_out_dim, lstm_input_dim=feature_size,
                                 hidden_dim=hidden_dim, label_out_dim=1,  meta_size=config.meta_size, all_month=all_month,
                                 month_len=model_lstm_len, layers=config.layers, dropout=config.dropout).to(device)
-        
+        '''
         # pre-training model parameter loading
         if cur_month == 1:
             if config.pretrained_path:
@@ -149,6 +153,7 @@ def main(config):
             print(gcn_dict.keys())
             model_dict.update(gcn_dict)
             model.load_state_dict(model_dict)
+        '''
 
         optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         loss_criterion = nn.MSELoss()
@@ -181,16 +186,17 @@ def main(config):
                     val_predict = out_test_price.detach().cpu().numpy()
 
                     mse, mae, rmse = score(val_predict, val_target)
-                    y_pre_error = pre_error(val_predict, val_target)
+                    # we can't use the pre_error function because the val_target is not a list
+                    y_pre_error = 13#pre_error(val_predict, val_target)
                     if rmse < min_rmse:
                         min_rmse = rmse
                         output = val_predict
                         # we save model monthly
-                        torch.save(model.state_dict(), config.data_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
+                        torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
                 end_time = time.time()
                 cost_time = end_time - start_time
                 logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time)
-        torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
+        #torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
 
 
 if __name__ == '__main__':

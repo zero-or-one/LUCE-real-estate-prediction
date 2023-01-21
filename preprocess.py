@@ -69,54 +69,67 @@ if __name__ == '__main__':
     #df['month'] = pd.DatetimeIndex(df['yyyymmdd']).month
 
     drop_col = ['building_type', 'Unnamed: 0', 'compare', 'updated_at', 'yyyymmdd',
-        'migrated_at', 'Unnamed: 0_y', 'construct_date']
+        'migrated_at', 'Unnamed: 0_y', 'construct_date', 'danji_id_hash',
+        'danji_keyword', 'danji_id', 'danji_x', 'danji_id_hash', 'default_pyeong_type']
     df = df.drop(drop_col, axis=1)
     df = df.reset_index(drop=True)
 
-    # sort the dataframe by year and remove uniques
-    df = df.sort_values(by='year')
-    max_num_house = df.house.nunique()
-    exists = []
-    for i in df.index:
-        if (df.loc[i, 'house'], df.loc[i, 'year']) in exists:
-            df = df.drop(i, axis=0)
+    # remove duplicate houses in each year   
+    for i in list(set(df.year)):
+        df_year = df[df['year'] == i]
+        df_year = df_year.drop_duplicates(subset=['house'], keep='last')
+        if i == list(set(df.year))[0]:
+            df_new = df_year
         else:
-            exists.append((df.loc[i, 'house'], df.loc[i, 'year']))
-    
+            df_new = pd.concat((df_new, df_year))
+    df = df_new
+    all_houses = list(set(df.house))
+    # sort houses by year and house id
+    df = df.sort_values(by=['year', 'house'])
     df = df.reset_index(drop=True)
 
-    years = []
-    for i in range(2006, 2023):
-        years.append(len(df.loc[df['year']==i]))
-    max_house_num = max(years)
-    max_year = years.index(max_house_num) + 2006
-    print("The maximum number of houses in a year is {}, year {}".format(max_house_num, max_year))
-
-    for i in range(2006, 2023):
-        if len(df.loc[df['year']==i]) < max_house_num:
-            num = max_house_num-len(df.loc[df['year']==i])
-            row = df.loc[df['year']==i].loc[[df.loc[df['year']==i].index[0]]]
-            df = df.append([row] * num, ignore_index=True)
-    df = df.sort_values(by='year')
+    # if house is not in the year, fill the missing value with price 0
+    for i in list(set(df.year)):
+        df_year = df[df['year'] == i]
+        houses = list(set(df_year.house))
+        for h in all_houses:
+            if h not in houses:
+                # find house from other years
+                row = df[df['house'] == h].iloc[0]
+                row.price = 0
+                row.year = i
+                df_year = df_year.append(row, ignore_index=True)
+        df_year = df_year.sort_values(by=['house'])
+        df_year = df_year.reset_index(drop=True)
+        if i == list(set(df.year))[0]:
+            df = df_year
+        else:
+            df = pd.concat((df, df_year))
+    # sort houses by year and house id
+    df = df.sort_values(by=['year', 'house'])
     df = df.reset_index(drop=True)
+
+    # create meta path and construct graph
     if args.create_adj:
-        # create meta path and construct graph
         house_meta = ['house', 'area_index', 'households', 'pyeong_type', 'supply_area_rep',
             'supply_area', 'supply_pyeong_rep', 'supply_pyeong', 'private_area', 'private_pyeong',
             'private_area_rate', 'entrance_type_x', 'room_count', 'bathroom_count',
             'average_maintenance_cost', 'average_summer_maintenance_cost',
-            'average_winter_maintenance_cost', 'danji_id_hash', 'danji_keyword', 'total_parking',
+            'average_winter_maintenance_cost', 'total_parking',
             'parking_households', 'entrance_type_y', 'heat_system', 'heat_fuel',
-            'default_pyeong_type', 'floor']
-        geo_meta = ['house', 'danji_id', 'danji_x', 'danji_id_hash', 'total_households',
-            'dongs', 'bjd_code', 'sd', 'sgg', 'emd', 'lon_x', 'lat_y', 'construct_name']
-        df_h = df[house_meta]
-        df_g = df[geo_meta]
+             'floor']
+        geo_meta = ['house', 'total_households', 'dongs', 'bjd_code', 'sd', 
+        'sgg', 'emd', 'lon_x', 'lat_y', 'construct_name']
+        # we just use random year
+        df_single = df#[df['year']==2006]
+        df_h = df_single[house_meta]
+        #print(df_h.shape)
+        df_g = df_single[geo_meta]
         Gh = construct_graph_from_df(df_h)
         Gg = construct_graph_from_df(df_g)
         # Create adjacency matrix for each meta path
-        Ah = create_adj(Gh, df.house.tolist())
-        Ag = create_adj(Gg, df.house.tolist())
+        Ah = create_adj(Gh, df_single.house.tolist())
+        Ag = create_adj(Gg, df_single.house.tolist())
 
         print("The true shape of adjacency matrix for house meta path is {}".format(Ah.shape)) 
         print("The true shape of adjacency matrix for geo meta path is {}".format(Ag.shape))

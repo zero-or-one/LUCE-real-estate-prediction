@@ -34,6 +34,7 @@ class GraphConvolution(nn.Module):
         support = torch.mm(input.float(), self.weight.float())
         adj = adj + torch.eye(adj.shape[0],adj.shape[0]).to(input.device).float()  # A+I
         #print(adj.type(), support.type())
+        #print(adj.shape, support.shape)
         output = torch.spmm(adj.float(), support)
         if self.bias is not None:
             return output + self.bias

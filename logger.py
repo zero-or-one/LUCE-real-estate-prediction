@@ -40,7 +40,7 @@ class Logger():
             with open(self.other_file_path+'price_list.csv', 'w') as f:
                 f.write('index, list, target, pre, pre-target, list-target\n')
                 f.write(w_str)
-        print("Test MSE: {} MAE:{} RMSE: {} pre_error:{} cost_time:{}".format(mse, mae, rmse, y_pre_error, cost_time))
+        print("Test MSE: {} MAE:{} RMSE: {} cost_time:{}".format(mse, mae, rmse, cost_time))
     
     def log_training(self, epoch, avg_training_loss):
         with open(self.result_file_path+'loss_error.txt', 'a+') as f:

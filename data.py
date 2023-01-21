@@ -43,48 +43,19 @@ def load_data(path, month_len, house_size, dataset):
     print('label size: ' + str(labels.shape))
 
     # Create indexes for training and test sets
-    index = [i for i in range(data_size)]
-
+    #index = [i for i in range(data_size)]
     """
     for each months for each house we get the data
     """
 
-    start = years.index(2007)
-    end = years.index(2008)
-    year = index[start: end]
-    '''
-    if len(year) < house_size:
-        l = house_size - len(year)
-        year += [year[-1]]*l
-    '''
-    year = np.array([year])
-    #print(year.shape)
-    train_index = np.array(year)
-    test_index = np.array(year)
-    for i in range(2008, 2022):
-        start = years.index(i)
-        end = years.index(i+1)
-        year = index[start: end]
-        '''
-        # let's use something like padding to make sure that the size of each year is the same
-        if len(year) < house_size:
-            l = house_size - len(year)
-            year += [year[-1]]*l
-        '''
-        year = np.array([year])
-        #print(year.shape)
-        train_index = np.concatenate((train_index, year), axis=0)
-        test_index = np.concatenate((test_index, year), axis=0)
-    final = len(years)
-    year = index[end: final]
-    '''
-    if len(year) < house_size:
-        l = house_size - len(year)
-        year += [year[-1]]*l
-    '''
-    year = np.array([year])
-    train_index = np.concatenate((train_index, year), axis=0)
-    test_index = np.concatenate((test_index, year), axis=0)
+    index = range(0, data_size)
+    train_index = []
+    test_index = []
+    for i in range(month_len - 1):
+        train_index.append(index[i*house_size: (i+1)*house_size])
+        test_index.append(index[(i+1)*house_size: (i+2)*house_size])
+    train_index = np.array(train_index)
+    test_index = np.array(test_index)
 
 
     np.save(path + 'features.npy', features)
