@@ -35,7 +35,6 @@ python train_prelifelong.py
 ```
 
 ### Results
-### Results
 | Model | MSE | MAE |
 |-------|--|--|
 | LSTM | 0.087 | 0.194 |
