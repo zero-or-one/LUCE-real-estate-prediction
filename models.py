@@ -308,3 +308,21 @@ class LSTM_static(nn.Module):
         out = out.view(shape, self.nfeat)
         x = self.linear_price(out)
         return x 
+
+class LSTM(nn.Module):
+    def __init__(self, config):
+        super(LSTM, self).__init__()
+        self.hidden_dim = config.hidden_dim
+        self.num_layers = config.num_layers
+        self.output_dim = 1
+        self.lstm = nn.LSTM(config.input_dim, config.hidden_dim, config.num_layers, batch_first=True)
+        self.fc = nn.Linear(config.hidden_dim, self.output_dim)
+
+    def forward(self, x):
+        x = x.unsqueeze(0)
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).requires_grad_().to(x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).requires_grad_().to(x.device)
+        out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
+        out = self.fc(out) 
+
+        return out.squeeze(0)

@@ -15,8 +15,8 @@ class DefaultConfig:
         self.gc2_outdim = 400
         self.layers = 1
         self.dropout = 0.2
-        self.epoch = 800
-        self.batch_size = 64 #350
+        self.epoch = 20000
+        self.batch_size = 350 #350
         self.seq_len = 17  # the number of years in the data
         self.house_size = 184 # number of houses per year
         self.meta_size = 2
@@ -37,22 +37,16 @@ class LSTMConfig(DefaultConfig):
     def __init__(self, device):
         super().__init__(device)
         self.result_path = 'result_lstm/'
-        self.model = 'LSTM_static(config)'
+        self.model = 'LSTM(config)'
+        self.dataset = 'processed_data_lstm.csv'
+        self.hidden_dim = 128
+        self.num_layers = 3
+        self.input_dim = 338
 
-class GCNLSTMConfig(DefaultConfig):
-    def __init__(self, device):
-        super().__init__(device)
-        self.result_path = 'result_gcn_lstm/'
-        self.model = 'GCNlstm_static(config)'
+
 
 class GCNConfig(DefaultConfig):
     def __init__(self, device):
         super().__init__(device)
         self.result_path = 'result_gcn/'
         self.model = 'GCN2lv_static(config)'
-
-class TGCNConfig(DefaultConfig):
-    def __init__(self, device):
-        super().__init__(device)
-        self.result_path = 'result_tgcn/'
-        self.model = 'T_GCN(config)'

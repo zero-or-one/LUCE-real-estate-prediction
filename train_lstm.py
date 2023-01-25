@@ -74,8 +74,6 @@ if __name__ == '__main__':
         model.train()
         optimizer.zero_grad()   # Gradient zeroing
         out_price = model(features)  # forward() function in LSTMs, graph convolution operation
-        #print('out_price:' + str(out_price.shape))
-        #print('labels[train_index]:' + str(labels[train_index].shape))
         loss = loss_criterion(out_price[train_index, 0], labels[train_index, 0])  # loss calculation, pre and target
         loss.backward()     # backward propagation calculation
         optimizer.step()    # model parameter update
@@ -90,11 +88,11 @@ if __name__ == '__main__':
             val_predict = out_test_price[test_index].detach().cpu().numpy()
             val_target = labels[test_index].cpu().numpy()
             mse, mae, rmse = score(val_predict, val_target)
-            y_pre_error, pred_acc = pre_error(val_predict, val_target)
+            #y_pre_error, pred_acc = pre_error(val_predict, val_target)
+            y_pre_error = 13
             if rmse < min_rmse:
                 min_rmse = rmse
                 min_mae = mae
-                max_pred_acc = pred_acc
                 output = val_predict
                 logger.save_model(model, optimizer, i)
         end_time = time.time()

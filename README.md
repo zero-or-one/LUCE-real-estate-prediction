@@ -34,6 +34,14 @@ python train.py --config $gcn_config
 python train_prelifelong.py
 ```
 
+### Results
+### Results
+| Model | MSE | MAE |
+|-------|--|--|
+| LSTM | 0.087 | 0.194 |
+| GCN | 0.647 | 0.744 |
+| LUCE | 0.034 | 0.139 |
+
 ### Things to improve
 * Make the script to train the model end-to-end
 * Creation of adjacency matrix is of O(n^2) complexity. Optimization will save a lot of time 

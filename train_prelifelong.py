@@ -161,10 +161,12 @@ def main(config):
         
         # set the training cycle of each month's model to be the same
         for i in range(train_epoch):
+            start_time = time.time()
             for b in range(batch_num):
-                start_time = time.time()
-                training_loss = []
-                validation_losses = []
+                training_loss = 0
+                mae_list = 0
+                rmse_list = 0
+                mse_list = 0
                 model.train()
                 optimizer.zero_grad()
                 #print(train_index_p[b].shape, features.shape, adj.shape)
@@ -173,9 +175,7 @@ def main(config):
                 loss = loss_criterion(out_price, Y_train_batch[b])
                 loss.backward()  
                 optimizer.step()
-                training_loss.append(loss.detach().cpu().numpy())
-                avg_training_loss = sum(training_loss) / len(training_loss)
-                logger.log_training(i, avg_training_loss)
+                training_loss += loss.item()
 
                 # evaluate the model on the test set after training
                 with torch.no_grad():
@@ -186,16 +186,25 @@ def main(config):
                     val_predict = out_test_price.detach().cpu().numpy()
 
                     mse, mae, rmse = score(val_predict, val_target)
+                    mse_list += mse
+                    mae_list += mae
+                    rmse_list += rmse
                     # we can't use the pre_error function because the val_target is not a list
-                    y_pre_error = 13#pre_error(val_predict, val_target)
+                    y_pre_error = 13 #pre_error(val_predict, val_target)
                     if rmse < min_rmse:
                         min_rmse = rmse
                         output = val_predict
                         # we save model monthly
                         torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
-                end_time = time.time()
-                cost_time = end_time - start_time
-                logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time)
+            end_time = time.time()
+            cost_time = end_time - start_time
+            print(training_loss)
+            avg_training_loss = training_loss / batch_num
+            logger.log_training(i, avg_training_loss)
+            mse = mse_list / batch_num
+            mae = mae_list / batch_num
+            rmse = rmse_list / batch_num
+            logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time)
         #torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
 
 

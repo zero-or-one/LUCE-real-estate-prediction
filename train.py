@@ -90,11 +90,11 @@ if __name__ == '__main__':
             val_predict = out_test_price[test_index].detach().cpu().numpy()
             val_target = labels[test_index].cpu().numpy()
             mse, mae, rmse = score(val_predict, val_target)
-            y_pre_error, pred_acc = pre_error(val_predict, val_target)
+            #y_pre_error, pred_acc = pre_error(val_predict, val_target)
+            y_pre_error = 13
             if rmse < min_rmse:
                 min_rmse = rmse
                 min_mae = mae
-                max_pred_acc = pred_acc
                 output = val_predict
                 logger.save_model(model, optimizer, i)
         end_time = time.time()

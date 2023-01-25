@@ -8,6 +8,8 @@ from scipy import sparse
 import matplotlib.pyplot as plt
 import argparse
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.externals import joblib 
 
 
 def construct_graph_from_df(df, G=None, hid='house'):
@@ -69,8 +71,9 @@ if __name__ == '__main__':
     #df['month'] = pd.DatetimeIndex(df['yyyymmdd']).month
 
     drop_col = ['building_type', 'Unnamed: 0', 'compare', 'updated_at', 'yyyymmdd',
-        'migrated_at', 'Unnamed: 0_y', 'construct_date', 'danji_id_hash',
-        'danji_keyword', 'danji_id', 'danji_x', 'danji_id_hash', 'default_pyeong_type']
+        'migrated_at', 'Unnamed: 0_y', 'danji_id', 'supply_area', 'pyeong_type', 'supply_pyeong_rep' ,
+         'average_maintenance_cost','average_summer_maintenance_cost', 'average_winter_maintenance_cost', 
+         'danji_id_hash']
     df = df.drop(drop_col, axis=1)
     df = df.reset_index(drop=True)
 
@@ -87,37 +90,38 @@ if __name__ == '__main__':
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'house'])
     df = df.reset_index(drop=True)
+    df_lstm = df.copy()
 
     # if house is not in the year, fill the missing value with price 0
     for i in list(set(df.year)):
         df_year = df[df['year'] == i]
         houses = list(set(df_year.house))
+        #print(houses)
         for h in all_houses:
             if h not in houses:
                 # find house from other years
-                row = df[df['house'] == h].iloc[0]
+                row = df[df['house'] == h].iloc[0].copy()
                 row.price = 0
                 row.year = i
+                #print(row)
                 df_year = df_year.append(row, ignore_index=True)
         df_year = df_year.sort_values(by=['house'])
         df_year = df_year.reset_index(drop=True)
         if i == list(set(df.year))[0]:
-            df = df_year
+            df_new = df_year
         else:
-            df = pd.concat((df, df_year))
+            df_new = pd.concat((df_new, df_year))
+    df = df_new
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'house'])
-    df = df.reset_index(drop=True)
 
     # create meta path and construct graph
     if args.create_adj:
-        house_meta = ['house', 'area_index', 'households', 'pyeong_type', 'supply_area_rep',
-            'supply_area', 'supply_pyeong_rep', 'supply_pyeong', 'private_area', 'private_pyeong',
+        house_meta = ['house', 'area_index', 'households',
+            'supply_pyeong', 'private_area', 'private_pyeong',
             'private_area_rate', 'entrance_type_x', 'room_count', 'bathroom_count',
-            'average_maintenance_cost', 'average_summer_maintenance_cost',
-            'average_winter_maintenance_cost', 'total_parking',
-            'parking_households', 'entrance_type_y', 'heat_system', 'heat_fuel',
-             'floor']
+            'total_parking', 'parking_households', 'entrance_type_y', 
+            'heat_system', 'heat_fuel', 'floor']
         geo_meta = ['house', 'total_households', 'dongs', 'bjd_code', 'sd', 
         'sgg', 'emd', 'lon_x', 'lat_y', 'construct_name']
         # we just use random year
@@ -149,6 +153,23 @@ if __name__ == '__main__':
     # move the target column to the last
     end_col = ['price', 'house', 'year']
     df = df[[c for c in df if c not in end_col] + [c for c in end_col if c in df]]
+    # scale the data
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    df.iloc[:, :-2] = scaler.fit_transform(df.iloc[:, :-2])
+    # save the scaler
+    joblib.dump(scaler, './data/scaler.pkl')
+
+    # prepare data for training using one-hot encoding
+    df_lstm = pd.get_dummies(df_lstm)
+    # move the target column to the last
+    end_col = ['price', 'house', 'year']
+    df_lstm = df_lstm[[c for c in df_lstm if c not in end_col] + [c for c in end_col if c in df_lstm]]
+    # scale the data
+    scaler = MinMaxScaler(feature_range=(-1, 1))
+    df_lstm.iloc[:, :-2] = scaler.fit_transform(df_lstm.iloc[:, :-2])
+    # save the scaler
+    joblib.dump(scaler, './data/scaler_lstm.pkl')
 
     # save the data
     df.to_csv('./data/processed_data.csv', index=False)
+    df_lstm.to_csv('./data/processed_data_lstm.csv', index=False)
