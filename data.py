@@ -29,13 +29,13 @@ def load_data(path, month_len, house_size, dataset):
 
     #idx_features_labels = np.genfromtxt("{}n_feature.txt".format(path), dtype=np.float32)
     idx_features_labels = pd.read_csv("{}{}".format(path, dataset), dtype=np.float32)
-    years = idx_features_labels['year'].tolist()
     idx_features_labels = idx_features_labels.values
 
     feature_size = idx_features_labels.shape[1]     # feature dimension
     data_size = idx_features_labels.shape[0]        # Total number of houses for all months
 
-    features = idx_features_labels[:, 0:feature_size-3]  # Features, remove listing price and transaction price
+    features = idx_features_labels[:, 0:feature_size-3]  \
+        + idx_features_labels[:, -1:]    # Features, remove listing price and transaction price
     labels = idx_features_labels[:, -3]                 # final price
     labels = labels[:, np.newaxis]                      # Column vector to column vector matrix
 

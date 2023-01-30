@@ -156,8 +156,7 @@ def main(config):
         '''
 
         optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
-        loss_criterion = nn.MSELoss()
-        min_rmse = 10000
+        loss_criterion = eval(config.loss)
         
         # set the training cycle of each month's model to be the same
         for i in range(train_epoch):
@@ -181,31 +180,23 @@ def main(config):
                 with torch.no_grad():
                     model.eval()
                     _, out_test_price = model(adj, features, test_index_p[0])
-
                     val_target = Y_test_batch[0].cpu().numpy()
                     val_predict = out_test_price.detach().cpu().numpy()
-
                     mse, mae, rmse = score(val_predict, val_target)
                     mse_list += mse
                     mae_list += mae
                     rmse_list += rmse
                     # we can't use the pre_error function because the val_target is not a list
-                    y_pre_error = 13 #pre_error(val_predict, val_target)
-                    if rmse < min_rmse:
-                        min_rmse = rmse
-                        output = val_predict
-                        # we save model monthly
-                        torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
             end_time = time.time()
             cost_time = end_time - start_time
-            print(training_loss)
+            
             avg_training_loss = training_loss / batch_num
             logger.log_training(i, avg_training_loss)
             mse = mse_list / batch_num
             mae = mae_list / batch_num
             rmse = rmse_list / batch_num
-            logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time)
-        #torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
+            logger.log_testing(i, mse, mae, rmse, cost_time)
+        torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
 
 
 if __name__ == '__main__':
@@ -216,7 +207,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     torch.cuda.manual_seed(args.seed)
-    #os.environ["CUDA_LAUNCH_BLOCKING"] = '1'
     os.environ["CUDA_VISIBLE_DEVICES"] = args.visible_devices
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print("Device is", device)

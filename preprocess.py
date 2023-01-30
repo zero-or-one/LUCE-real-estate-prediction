@@ -63,6 +63,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_path" , type=str, default='./data/dataset_realestate.csv')
     parser.add_argument("--create_adj", type=int, default=1)
+    parser.add_argument("--fill_gaps", type=int, default=1)
     args = parser.parse_args()
 
     df = pd.read_csv(args.data_path, index_col=False)
@@ -91,27 +92,29 @@ if __name__ == '__main__':
     df = df.sort_values(by=['year', 'house'])
     df = df.reset_index(drop=True)
     df_lstm = df.copy()
-
-    # if house is not in the year, fill the missing value with price 0
-    for i in list(set(df.year)):
-        df_year = df[df['year'] == i]
-        houses = list(set(df_year.house))
-        #print(houses)
-        for h in all_houses:
-            if h not in houses:
-                # find house from other years
-                row = df[df['house'] == h].iloc[0].copy()
-                row.price = 0
-                row.year = i
-                #print(row)
-                df_year = df_year.append(row, ignore_index=True)
-        df_year = df_year.sort_values(by=['house'])
-        df_year = df_year.reset_index(drop=True)
-        if i == list(set(df.year))[0]:
-            df_new = df_year
-        else:
-            df_new = pd.concat((df_new, df_year))
-    df = df_new
+    if args.fill_gaps:
+        # if house is not in the year, fill the missing value with price 0
+        for i in list(set(df.year)):
+            df_year = df[df['year'] == i]
+            # find average price of the year
+            avg_price = df_year.price.mean()
+            houses = list(set(df_year.house))
+            #print(houses)
+            for h in all_houses:
+                if h not in houses:
+                    # find house from other years
+                    row = df[df['house'] == h].iloc[0].copy()
+                    row.price = avg_price
+                    row.year = i
+                    #print(row)
+                    df_year = df_year.append(row, ignore_index=True)
+            df_year = df_year.sort_values(by=['house'])
+            df_year = df_year.reset_index(drop=True)
+            if i == list(set(df.year))[0]:
+                df_new = df_year
+            else:
+                df_new = pd.concat((df_new, df_year))
+        df = df_new
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'house'])
 

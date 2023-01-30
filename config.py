@@ -15,7 +15,7 @@ class DefaultConfig:
         self.gc2_outdim = 400
         self.layers = 1
         self.dropout = 0.2
-        self.epoch = 20000
+        self.epoch = 30000
         self.batch_size = 350 #350
         self.seq_len = 17  # the number of years in the data
         self.house_size = 184 # number of houses per year
@@ -25,6 +25,10 @@ class DefaultConfig:
         self.lr = 1e-3
         self.weight_decay = 5e-4
         self.loss = 'nn.MSELoss()'
+        self.save_period = 300
+        self.num_layers = 3
+        self.bidirectional = True
+
 
 class PrelifelongConfig(DefaultConfig):
     def __init__(self, device):
@@ -33,16 +37,26 @@ class PrelifelongConfig(DefaultConfig):
         self.model = 'r_gcn2lv_1LSTMs(config)'
         self.pretrained_path = None
 
+class GCNlstm_staticConfig(DefaultConfig):
+    def __init__(self, device):
+        super().__init__(device)
+        self.result_path = 'result_gcnlstm_static/'
+        self.model = 'GCNlstm_static(config)'
+        self.lr = 1e-4
+
+
+
 class LSTMConfig(DefaultConfig):
     def __init__(self, device):
         super().__init__(device)
         self.result_path = 'result_lstm/'
         self.model = 'LSTM(config)'
         self.dataset = 'processed_data_lstm.csv'
-        self.hidden_dim = 128
+        self.hidden_dim = 256
         self.num_layers = 3
+        self.lr = 1e-4
         self.input_dim = 338
-
+        self.bidirectional = True
 
 
 class GCNConfig(DefaultConfig):
@@ -50,3 +64,4 @@ class GCNConfig(DefaultConfig):
         super().__init__(device)
         self.result_path = 'result_gcn/'
         self.model = 'GCN2lv_static(config)'
+        self.lr = 1e-4

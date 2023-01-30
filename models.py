@@ -150,6 +150,7 @@ class GCN2lv_static(nn.Module):
         nn.init.xavier_uniform_(self.W.data)
         self.gc1 = GraphConvolution(config.nfeat, config.gc1_outdim)
         self.gc2 = GraphConvolution(config.gc1_outdim, config.gc2_outdim)
+        #self.gc3 = GraphConvolution(config.gc2_outdim, config.gc2_outdim)
         self.dropout = config.dropout
         self.dense2 = nn.Linear(config.gc2_outdim, 1)
 
@@ -160,6 +161,7 @@ class GCN2lv_static(nn.Module):
         for i in range(self.meta_size):
             gcn_out.append(F.relu(self.gc1(x, adj[i])))
             gcn_out[i] = F.relu(self.gc2(gcn_out[i], adj[i]))
+            #gcn_out[i] = F.relu(self.gc3(gcn_out[i], adj[i]))
             gcn_out[i] = gcn_out[i].view(1,shape*self.gc2_outdim)
 
         x = gcn_out[0]
@@ -286,10 +288,10 @@ class LSTM_static(nn.Module):
         super(LSTM_static, self).__init__()
         self.house_size = config.house_size
         self.nfeat = config.nfeat
-        self.lstm = nn.LSTM(input_size=self.nfeat, hidden_size=self.nfeat, num_layers=1)
+        self.lstm = nn.LSTM(input_size=self.nfeat, hidden_size=self.nfeat, num_layers=config.num_layers, bidirectional=config.bidirectional)
         self.LeakyReLU = nn.LeakyReLU(0.2)
         self.dropout = config.dropout
-        self.linear_price = nn.Linear(self.nfeat, 1)
+        self.linear_price = nn.Linear(2*self.nfeat, 1)
 
     def forward(self, x):
         shape = x.shape[0]
@@ -315,13 +317,17 @@ class LSTM(nn.Module):
         self.hidden_dim = config.hidden_dim
         self.num_layers = config.num_layers
         self.output_dim = 1
-        self.lstm = nn.LSTM(config.input_dim, config.hidden_dim, config.num_layers, batch_first=True)
-        self.fc = nn.Linear(config.hidden_dim, self.output_dim)
+        self.dimension = self.num_layers * 2 if config.bidirectional else self.num_layers
+        self.lstm = nn.LSTM(config.input_dim, config.hidden_dim, config.num_layers, batch_first=True,\
+         dropout=config.dropout, bidirectional=config.bidirectional)
+        fc_input_dim = self.hidden_dim * 2 if config.bidirectional else self.hidden_dim
+        self.fc = nn.Linear(fc_input_dim, self.output_dim)
 
     def forward(self, x):
         x = x.unsqueeze(0)
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).requires_grad_().to(x.device)
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_dim).requires_grad_().to(x.device)
+        
+        h0 = torch.zeros(self.dimension, x.size(0), self.hidden_dim).requires_grad_().to(x.device)
+        c0 = torch.zeros(self.dimension, x.size(0), self.hidden_dim).requires_grad_().to(x.device)
         out, (hn, cn) = self.lstm(x, (h0.detach(), c0.detach()))
         out = self.fc(out) 
 

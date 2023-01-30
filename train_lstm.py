@@ -88,16 +88,10 @@ if __name__ == '__main__':
             val_predict = out_test_price[test_index].detach().cpu().numpy()
             val_target = labels[test_index].cpu().numpy()
             mse, mae, rmse = score(val_predict, val_target)
-            #y_pre_error, pred_acc = pre_error(val_predict, val_target)
-            y_pre_error = 13
-            if rmse < min_rmse:
-                min_rmse = rmse
-                min_mae = mae
-                output = val_predict
-                logger.save_model(model, optimizer, i)
         end_time = time.time()
         cost_time = end_time-start_time
-        logger.log_testing(i, mse, mae, rmse, y_pre_error, cost_time)
-
-    print("MAE:{} RMSE: {} R2_score:{}\n".format(mae, rmse, max_pred_acc))
+        logger.log_testing(i, mse, mae, rmse, cost_time)
+        if i % config.save_period == 0:
+            logger.save_model(model, optimizer, i)
+    print("MAE:{} RMSE: {}".format(mae, rmse))
 
