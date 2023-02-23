@@ -122,7 +122,7 @@ if __name__ == '__main__':
         df = df_new
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'house'])
-
+    #df_lstm = df.copy()
     # create meta path and construct graph
     if args.create_adj:
         house_meta = ['house', 'area_index', 'households',
