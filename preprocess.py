@@ -96,12 +96,17 @@ if __name__ == '__main__':
         # if house is not in the year, fill the missing value with price 0
         for i in list(set(df.year)):
             df_year = df[df['year'] == i]
+            
             # find average price of the year
             avg_price = df_year.price.mean()
+            
             houses = list(set(df_year.house))
-            #print(houses)
             for h in all_houses:
                 if h not in houses:
+                    '''
+                    # find the average price of the house in other years
+                    avg_price = df[df['house'] == h].price.mean()
+                    '''
                     # find house from other years
                     row = df[df['house'] == h].iloc[0].copy()
                     row.price = avg_price

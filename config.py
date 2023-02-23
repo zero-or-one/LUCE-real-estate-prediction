@@ -36,6 +36,7 @@ class PrelifelongConfig(DefaultConfig):
         self.result_path = 'result_prelifelong/'
         self.model = 'r_gcn2lv_1LSTMs(config)'
         self.pretrained_path = None
+        #self.lr = 1e-2
 
 class GCNlstm_staticConfig(DefaultConfig):
     def __init__(self, device):
