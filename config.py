@@ -44,6 +44,7 @@ class GCNlstm_staticConfig(DefaultConfig):
         self.result_path = 'result_gcnlstm_static/'
         self.model = 'GCNlstm_static(config)'
         self.lr = 1e-4
+        self.epoch = 20000
 
 
 
