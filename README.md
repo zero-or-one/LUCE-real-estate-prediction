@@ -18,6 +18,10 @@ pip install -r requirements.txt
 ### Preprocess
 Create adjacency matrix and one hot encoding
 ```
+python preprocess.py --data_path $path_to_csv_dataset --create_adj $wheither_to_produce_adj
+```
+If montly based data needs to be trained instead of yearly, run
+```
 python preprocess_montly.py --data_path $path_to_csv_dataset --create_adj $wheither_to_produce_adj
 ```
 
