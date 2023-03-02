@@ -94,7 +94,7 @@ if __name__ == '__main__':
     df = df.reset_index(drop=True)
     df_lstm = df.copy()
     if args.fill_gaps:
-        '''
+        
         # if house is not in the month, fill the missing value with price 0
         for i in list(set(df.year)):
             df_year = df[df['year'] == i]
@@ -110,16 +110,17 @@ if __name__ == '__main__':
                         row = df[df['house'] == h].iloc[0].copy()
                         # op1: fill with average price of the year
                         # if house is not in the month, fill with other month's price
-                        #if h in houses_year:
-                        #    row.price = df_year[df_year['house'] == h].price.mean()
-                        #else:
-                        #    row.price = avg_price
+                        if h in houses_year:
+                            row.price = df_year[df_year['house'] == h].price.mean()
+                        else:
+                            row.price = avg_price
                         #row.house = h
                         
                         # op2: fill with 0
+                        #row.price = 0
                         row.year = i
                         row.month = j
-                        row.price = 0
+                        
                         df_year = df_year.append(row, ignore_index=True)
                         
                         # op3: fill with price of the same hosue in previous month      
@@ -133,6 +134,7 @@ if __name__ == '__main__':
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'month', 'house'])
     #df_lstm = df.copy()
+    
     '''
     df = df.sort_values(by=['year', 'month', 'house'])
     # op3 fill with price of the same house in next month
@@ -167,7 +169,7 @@ if __name__ == '__main__':
         else:
             df_new = pd.concat([df_new, df_year])
         print('year {} done, time: {}'.format(i, time.time()-start))
-            
+    '''
     df = df_new.sort_values(by=['year', 'month', 'house']).reset_index(drop=True)
     # create meta path and construct graph
     if args.create_adj:
@@ -243,5 +245,5 @@ if __name__ == '__main__':
     joblib.dump(scaler, './data/scaler_lstm.pkl')
 
     # save the data
-    df.to_csv('./data/processed_data_op2.csv', index=False)
+    df.to_csv('./data/processed_data.csv', index=False)
     df_lstm.to_csv('./data/processed_data_lstm.csv', index=False)
