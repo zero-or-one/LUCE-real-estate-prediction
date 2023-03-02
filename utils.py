@@ -48,7 +48,7 @@ def prepare_data(config):
             or not os.path.exists(config.data_path + 'train_index.npy') \
             or not os.path.exists(config.data_path + 'test_index.npy'):
         features, labels, train_index, test_index = \
-            load_data(path=config.data_path, month_len=config.seq_len, house_size=config.house_size, dataset=config.dataset)
+            load_data(path=config.data_path, month_len=config.seq_len, house_size=config.house_size, dataset=config.dataset, concat=config.concat)
         print('Data is generated.')
     else:
         features = np.load(config.data_path + 'features.npy')
@@ -56,7 +56,13 @@ def prepare_data(config):
         train_index = np.load(config.data_path + 'train_index.npy', allow_pickle=True)
         test_index = np.load(config.data_path + 'test_index.npy', allow_pickle=True)
         print('Data is loaded.')
-    adj = [np.load(config.data_path + 'adjacency_house.npy'), np.load(config.data_path + 'adjacency_geo.npy')]
+    adj = []
+    for name in ['adjacency_house.npy', 'adjacency_geo.npy']:
+        a = np.load(config.data_path + name)
+        a = np.tile(a, (config.seq_len//12, config.seq_len//12))
+        adj.append(a)
+    #adj = [np.load(config.data_path + 'adjacency_house.npy'), np.load(config.data_path + 'adjacency_geo.npy')]
+    
     # not working
     #adj = [np.load(config.data_path + 'adjacency_house.npz')['data'], np.load(config.data_path + 'adjacency_geo.npz')['data']]
     print('adj: ' + str(adj[0].shape))

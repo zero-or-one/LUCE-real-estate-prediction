@@ -16,9 +16,9 @@ class DefaultConfig:
         self.layers = 1
         self.dropout = 0.2
         self.epoch = 30000
-        self.batch_size = 350 #350
-        self.seq_len = 17  # the number of years in the data
-        self.house_size = 184 # number of houses per year
+        self.batch_size = 128#350
+        self.seq_len = 5*12  # the number of years in the data
+        self.house_size = 217 # number of houses per year
         self.meta_size = 2
         self.update_len = 4
         self.train_ratio = 0.9
@@ -28,15 +28,19 @@ class DefaultConfig:
         self.save_period = 300
         self.num_layers = 3
         self.bidirectional = True
+        self.concat = False
 
 
 class PrelifelongConfig(DefaultConfig):
     def __init__(self, device):
         super().__init__(device)
         self.result_path = 'result_prelifelong/'
+        self.data = 'processed_data.csv'
         self.model = 'r_gcn2lv_1LSTMs(config)'
         self.pretrained_path = None
+        self.concat = True
         #self.lr = 1e-2
+        
 
 class GCNlstm_staticConfig(DefaultConfig):
     def __init__(self, device):

@@ -23,12 +23,15 @@ def encode_onehot(labels):
     return labels_onehot
 
 
-def load_data(path, month_len, house_size, dataset):
+def load_data(path, month_len, house_size, dataset, concat=False):
     # Ensure that the number of houses (house_size) in each month is equal, data_size = month_len * house_size
     print('Loading data...')
 
     #idx_features_labels = np.genfromtxt("{}n_feature.txt".format(path), dtype=np.float32)
     idx_features_labels = pd.read_csv("{}{}".format(path, dataset), dtype=np.float32)
+    # take last 13020 rows
+    if concat:
+        idx_features_labels = idx_features_labels.iloc[-13020:, :]
     idx_features_labels = idx_features_labels.values
 
     feature_size = idx_features_labels.shape[1]     # feature dimension
@@ -47,15 +50,32 @@ def load_data(path, month_len, house_size, dataset):
     """
     for each months for each house we get the data
     """
-
     index = range(0, data_size)
+    #index = np.arange(0, data_size)
+    #index = [i for i in range(data_size)]
     train_index = []
     test_index = []
+    '''
     for i in range(month_len - 1):
         train_index.append(index[i*house_size: (i+1)*house_size])
         test_index.append(index[(i+1)*house_size: (i+2)*house_size])
+    # make numpy array for indexing
     train_index = np.array(train_index)
     test_index = np.array(test_index)
+    train_index = np.array([np.array(x) for x in train_index])
+    test_index = np.array([np.array(x) for x in test_index])
+    print(test_index)
+    print(train_index.shape, test_index.shape)
+    '''
+    train_index = np.zeros((month_len-1, house_size))
+    test_index = np.zeros((month_len-1, house_size))
+    index = np.arange(0, data_size)
+    #print(train_index.shape, test_index.shape, index.shape)
+    for i in range(month_len - 1):
+        train_index[i] = index[i*house_size: (i+1)*house_size]
+        test_index[i] = index[(i+1)*house_size: (i+2)*house_size]
+    #print(train_index.shape, test_index.shape)
+    #exit()
 
 
     np.save(path + 'features.npy', features)
