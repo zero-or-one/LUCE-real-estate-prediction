@@ -31,7 +31,7 @@ def load_data(path, month_len, house_size, dataset, concat=False):
     idx_features_labels = pd.read_csv("{}{}".format(path, dataset), dtype=np.float32)
     # take last 13020 rows
     if concat:
-        idx_features_labels = idx_features_labels.iloc[-13020:, :]
+        idx_features_labels = idx_features_labels.iloc[-2604*5:, :]
     idx_features_labels = idx_features_labels.values
 
     feature_size = idx_features_labels.shape[1]     # feature dimension
@@ -76,8 +76,6 @@ def load_data(path, month_len, house_size, dataset, concat=False):
         test_index[i] = index[(i+1)*house_size: (i+2)*house_size]
     #print(train_index.shape, test_index.shape)
     #exit()
-
-
     np.save(path + 'features.npy', features)
     np.save(path + 'labels.npy', labels)
     np.save(path + 'train_index.npy', train_index)

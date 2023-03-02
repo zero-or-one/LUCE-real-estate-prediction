@@ -68,18 +68,18 @@ def main(config):
     
     # data batch processing
     train_index_batch = make_index_batch(train_index, batch_size)
-    print("train_index_batch: " + str(train_index_batch.shape))
     test_index_batch = make_index_batch(test_index, batch_size)
     print("test_index_batch: " + str(test_index_batch.shape))
     # tensorization
     train_index_batch = train_index_batch.to(device)
+    print("train_index_batch: " + str(train_index_batch.shape))
     test_index_batch = test_index_batch.to(device)
     adj = torch.tensor(adj).to(device)
     features = torch.tensor(features).to(device)
     labels = torch.tensor(labels).to(device)
 
     #  model training
-    for cur_month in range(1, 7):
+    for cur_month in range(1, 58):
         # A month corresponds to a model model, and parameters are updated in the model of this month; cur_month represents the last month of the current training
          # r_gcnLSTMs starts training from the first month of data input each time, and gradually expands the model to the length of cur_month
          # According to update_len, when cur_month exceeds update_len, only update the parameters of [cur_month-update_len: cur_month] month each time
@@ -102,13 +102,14 @@ def main(config):
         Y_train_batch = make_Y_from_index(labels, train_index_p).to(device)
         Y_test_batch = make_Y_from_index(labels, test_index_p).to(device)
         batch_num = train_index_batch.shape[0]
-        #print('Y_train_batch: ' + str(Y_train_batch.shape))
+        print('Y_train_batch: ' + str(Y_train_batch.shape))
         #print('Y_test_batch: ' + str(Y_test_batch.shape))
 
         # Given parameters, so that the data dimension after GCN and lstm does not change
         model = r_gcn2lv_1LSTMs(gcn_input_dim=feature_size, gc1_out_dim=gc1_out_dim, lstm_input_dim=feature_size,
                                 hidden_dim=hidden_dim, label_out_dim=1,  meta_size=config.meta_size, all_month=all_month,
                                 month_len=model_lstm_len, layers=config.layers, dropout=config.dropout).to(device)
+        #model = nn.DataParallel(model)
         '''
         # pre-training model parameter loading
         if cur_month == 1:
