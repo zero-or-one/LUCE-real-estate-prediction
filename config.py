@@ -44,7 +44,9 @@ class PrelifelongConfig(DefaultConfig):
             self.seq_len = 17
             self.update_len = 6
             self.house_size = 184
-            self.epoch = 17000
+            self.layers = 2
+            self.lr = 1e-3
+            self.epoch = 30000
         else:
             self.result_path = 'result_prelifelong_monthly/'
             self.dataset = 'processed_data_monthly.csv'
