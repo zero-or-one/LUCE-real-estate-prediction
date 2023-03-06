@@ -58,9 +58,12 @@ def prepare_data(config):
         test_index = np.load(config.data_path + 'test_index.npy', allow_pickle=True)
         print('Data is loaded.')
     adj = []
+    tile_num = config.seq_len
+    if not config.yearly:
+        tile_num /= 12
     for name in ['adjacency_house.npy', 'adjacency_geo.npy']:
         a = np.load(config.data_path + name)
-        a = np.tile(a, (config.seq_len//12, config.seq_len//12))
+        a = np.tile(a, (tile_num, tile_num))
         adj.append(a)
     #adj = [np.load(config.data_path + 'adjacency_house.npy'), np.load(config.data_path + 'adjacency_geo.npy')]
     

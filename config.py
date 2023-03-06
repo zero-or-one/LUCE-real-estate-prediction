@@ -15,7 +15,7 @@ class DefaultConfig:
         self.gc2_outdim = 400
         self.layers = 1
         self.dropout = 0.2
-        self.epoch = 30000
+        self.epoch = 100
         self.batch_size = 350
         self.seq_len = 5*12  # the number of years in the data
         self.house_size = 217 # number of houses per year
@@ -34,12 +34,27 @@ class DefaultConfig:
 class PrelifelongConfig(DefaultConfig):
     def __init__(self, device):
         super().__init__(device)
-        self.result_path = 'result_prelifelong_opmy/'
-        self.data = 'processed_data.csv'
-        self.model = 'r_gcn2lv_1LSTMs(config)'
-        self.pretrained_path = None
-        self.concat = True
-        #self.lr = 1e-2
+        self.yearly = True
+        if self.yearly:
+            self.result_path = 'result_prelifelong_yearly/'
+            self.dataset = 'processed_data_yearly.csv'
+            self.model = 'r_gcn2lv_1LSTMs(config)'
+            self.pretrained_path = None
+            self.concat = False
+            self.seq_len = 17
+            self.update_len = 6
+            self.house_size = 184
+            self.epoch = 17000
+        else:
+            self.result_path = 'result_prelifelong_monthly/'
+            self.dataset = 'processed_data_monthly.csv'
+            self.model = 'r_gcn2lv_1LSTMs(config)'
+            self.pretrained_path = None
+            self.concat = True
+            self.seq_len = 5*12
+            self.update_len = 4*12
+            self.house_size = 217
+            self.epoch = 15000
         
 
 class GCNlstm_staticConfig(DefaultConfig):

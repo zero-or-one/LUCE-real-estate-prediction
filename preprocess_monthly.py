@@ -77,24 +77,13 @@ if __name__ == '__main__':
          'danji_id_hash']
     df = df.drop(drop_col, axis=1)
     df = df.reset_index(drop=True)
-    '''
-    # remove duplicate houses in each year   
-    for i in list(set(df.year)):
-        df_year = df[df['year'] == i]
-        df_year = df_year.drop_duplicates(subset=['house'], keep='last')
-        if i == list(set(df.year))[0]:
-            df_new = df_year
-        else:
-            df_new = pd.concat((df_new, df_year))
-    df = df_new
-    '''
     all_houses = set(df.house)
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'month', 'house'])
     df = df.reset_index(drop=True)
     df_lstm = df.copy()
     if args.fill_gaps:
-        
+        '''
         # if house is not in the month, fill the missing value with price 0
         for i in list(set(df.year)):
             df_year = df[df['year'] == i]
@@ -134,7 +123,6 @@ if __name__ == '__main__':
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'month', 'house'])
     #df_lstm = df.copy()
-    
     '''
     df = df.sort_values(by=['year', 'month', 'house'])
     # op3 fill with price of the same house in next month
@@ -169,7 +157,6 @@ if __name__ == '__main__':
         else:
             df_new = pd.concat([df_new, df_year])
         print('year {} done, time: {}'.format(i, time.time()-start))
-    '''
     df = df_new.sort_values(by=['year', 'month', 'house']).reset_index(drop=True)
     # create meta path and construct graph
     if args.create_adj:
@@ -192,9 +179,6 @@ if __name__ == '__main__':
         # Create adjacency matrix for each meta path
         Ah = create_adj(Gh, df_single.house.tolist())
         Ag = create_adj(Gg, df_single.house.tolist())
-        # duplicate the adjacency matrix for each year
-        #Ah = np.tile(Ah, (len(list(set(df.year))), len(list(set(df.year)))))
-        #Ag = np.tile(Ag, (len(list(set(df.year))), len(list(set(df.year)))))
 
         print("The true shape of adjacency matrix for house meta path is {}".format(Ah.shape)) 
         print("The true shape of adjacency matrix for geo meta path is {}".format(Ag.shape))

@@ -87,12 +87,13 @@ if __name__ == '__main__':
         else:
             df_new = pd.concat((df_new, df_year))
     df = df_new
-    all_houses = list(set(df.house))
+    all_houses = (set(df.house))
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'house'])
     df = df.reset_index(drop=True)
     df_lstm = df.copy()
     if args.fill_gaps:
+        '''
         # if house is not in the year, fill the missing value with price 0
         for i in list(set(df.year)):
             df_year = df[df['year'] == i]
@@ -103,10 +104,8 @@ if __name__ == '__main__':
             houses = list(set(df_year.house))
             for h in all_houses:
                 if h not in houses:
-                    '''
                     # find the average price of the house in other years
-                    avg_price = df[df['house'] == h].price.mean()
-                    '''
+                    #avg_price = df[df['house'] == h].price.mean()
                     # find house from other years
                     row = df[df['house'] == h].iloc[0].copy()
                     row.price = avg_price
@@ -119,6 +118,24 @@ if __name__ == '__main__':
                 df_new = df_year
             else:
                 df_new = pd.concat((df_new, df_year))
+        '''
+        # if house is not in the year, fill the missing value the next year's price
+        for i in list(set(df.year)):
+            df_year = df[df['year'] == i]
+            houses = (set(df_year.house))
+            for h in all_houses - houses:
+                # find house from other years
+                row = df[df['house'] == h].iloc[0].copy()
+                row.year = i
+                #print(row)
+                df_year = df_year.append(row, ignore_index=True)
+            df_year = df_year.sort_values(by=['house'])
+            df_year = df_year.reset_index(drop=True)
+            if i == list(set(df.year))[0]:
+                df_new = df_year
+            else:
+                df_new = pd.concat((df_new, df_year))
+            #print(len(df_year))
         df = df_new
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'house'])
@@ -133,7 +150,7 @@ if __name__ == '__main__':
         geo_meta = ['house', 'total_households', 'dongs', 'bjd_code', 'sd', 
         'sgg', 'emd', 'lon_x', 'lat_y', 'construct_name']
         # we just use random year
-        df_single = df#[df['year']==2006]
+        df_single = df[df['year']==2006]
         df_h = df_single[house_meta]
         #print(df_h.shape)
         df_g = df_single[geo_meta]
@@ -179,5 +196,5 @@ if __name__ == '__main__':
     joblib.dump(scaler, './data/scaler_lstm.pkl')
 
     # save the data
-    df.to_csv('./data/processed_data.csv', index=False)
+    df.to_csv('./data/processed_data_yearly.csv', index=False)
     df_lstm.to_csv('./data/processed_data_lstm.csv', index=False)

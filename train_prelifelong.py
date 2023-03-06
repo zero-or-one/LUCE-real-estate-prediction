@@ -79,25 +79,21 @@ def main(config):
     labels = torch.tensor(labels).to(device)
 
     #  model training
-    for cur_month in range(1, 58):
+    for cur_month in range(1, config.seq_len+1):
         # A month corresponds to a model model, and parameters are updated in the model of this month; cur_month represents the last month of the current training
          # r_gcnLSTMs starts training from the first month of data input each time, and gradually expands the model to the length of cur_month
          # According to update_len, when cur_month exceeds update_len, only update the parameters of [cur_month-update_len: cur_month] month each time
-        '''
         if cur_month <= update_len:
             model_lstm_len = cur_month
-            train_index_p = train_index_batch[:, 0: cur_month, :]
-            test_index_p = test_index_batch[:, 0: cur_month, :]
+            train_index_p = train_index_batch[:, 0: cur_month, :]#.unsqueeze(1)
+            test_index_p = test_index_batch[:, 0: cur_month, :]#.unsqueeze(1)
         else:
             model_lstm_len = update_len
-            train_index_p = train_index_batch[:, cur_month - model_lstm_len: cur_month, :]
-            test_index_p = test_index_batch[:, cur_month - model_lstm_len: cur_month, :]
-        '''
-        model_lstm_len = cur_month
-        train_index_p = train_index_batch[:, cur_month, :].unsqueeze(1)
-        test_index_p = test_index_batch[:, cur_month, :].unsqueeze(1)
+            train_index_p = train_index_batch[:, cur_month - model_lstm_len: cur_month, :]#.unsqueeze(1)
+            test_index_p = test_index_batch[:, cur_month - model_lstm_len: cur_month, :]#.unsqueeze(1)
 
-        #print('train_index_p: ' + str(train_index_p.shape))
+
+        print('train_index_p: ' + str(train_index_p.shape))
         #print('test_index_p: ' + str(test_index_p.shape))
         Y_train_batch = make_Y_from_index(labels, train_index_p).to(device)
         Y_test_batch = make_Y_from_index(labels, test_index_p).to(device)
@@ -110,7 +106,7 @@ def main(config):
                                 hidden_dim=hidden_dim, label_out_dim=1,  meta_size=config.meta_size, all_month=all_month,
                                 month_len=model_lstm_len, layers=config.layers, dropout=config.dropout).to(device)
         #model = nn.DataParallel(model)
-        '''
+        
         # pre-training model parameter loading
         if cur_month == 1:
             if config.pretrained_path:
@@ -118,20 +114,21 @@ def main(config):
                 model_dict = model.state_dict()
                 # all existing parameters are inherited, including LSTM and GCN of each month
                 state_dict = {'glstm.0.'+str(k): v for k, v in static_model.items() if 'glstm.0.'+str(k) in model_dict.keys()}
-                print(state_dict.keys())
+                #print(state_dict.keys())
                 model_dict.update(state_dict)
                 state_dict = {k: v for k, v in static_model.items() if k in model_dict.keys()}
-                print(state_dict.keys())
+                #print(state_dict.keys())
                 model_dict.update(state_dict)
                 model.load_state_dict(model_dict)
+                print('pretrained model loaded!')
 
         elif 1 < cur_month <= update_len:     # current month is within the update range
             #parameter inheritance
-            old_model = torch.load(config.result_path + 'model_saved/' + 'month' + str(cur_month - 1) + '.pkl')
+            old_model = torch.load(config.result_path + 'model_saved/' + 'time' + str(cur_month - 1) + '.pkl')
             model_dict = model.state_dict()
             # all existing parameters are inherited, including LSTM and GCN of each month
             state_dict = {k: v for k, v in old_model.items() if k in model_dict.keys()}
-            print(state_dict.keys())
+            #print(state_dict.keys())
             model_dict.update(state_dict)
 
             # The previous one month for the GCN model and the previous one for the next month.
@@ -139,22 +136,24 @@ def main(config):
                         old_model.items() if 'glstm.' + str(int(cur_month - 2)) in k}
             model_dict.update(new_dict)
             model.load_state_dict(model_dict)
+            print('pretrained model from previous time loaded!')
     
         elif cur_month > update_len:  #  current month is out of the update range
             # parameter inheritance
-            old_model = torch.load(config.result_path + 'model_saved/' + 'month' + str(cur_month - 1) + '.pkl')
+            old_model = torch.load(config.result_path + 'model_saved/' + 'time' + str(cur_month - 1) + '.pkl')
             model_dict = model.state_dict()
             # all existing parameters are inherited, including LSTM and GCN of each month
             state_dict = {k: v for k, v in old_model.items() if k in model_dict.keys()}
-            print(state_dict.keys())
+            #print(state_dict.keys())
             model_dict.update(state_dict)
             # GCN dislocation inheritance of each month, that is, glstm.1 in old_model should be glstm.0 in model
             gcn_dict = {k.replace('glstm.' + str(get_layer(k)), 'glstm.' + str(get_layer(k) - 1)): v
                           for k, v in old_model.items() if 'glstm.' in k and get_layer(k) > 0}
-            print(gcn_dict.keys())
+            #print(gcn_dict.keys())
             model_dict.update(gcn_dict)
             model.load_state_dict(model_dict)
-        '''
+            print('old model from previous time loaded!')
+        
 
         optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         loss_criterion = eval(config.loss)
@@ -197,7 +196,7 @@ def main(config):
             mae = mae_list / batch_num
             rmse = rmse_list / batch_num
             logger.log_testing(i, mse, mae, rmse, cost_time)
-        torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'month' + str(cur_month) + '.pkl')
+        torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'time' + str(cur_month) + '.pkl')
 
 
 if __name__ == '__main__':
