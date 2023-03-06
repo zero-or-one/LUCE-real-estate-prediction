@@ -44,7 +44,7 @@ class PrelifelongConfig(DefaultConfig):
             self.seq_len = 17
             self.update_len = 6
             self.house_size = 184
-            self.layers = 2
+            self.layers = 1
             self.lr = 1e-3
             self.epoch = 30000
         else:
