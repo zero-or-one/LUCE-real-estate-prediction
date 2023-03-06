@@ -28,17 +28,16 @@ python train_prelifelong.py
 ### Results
 | Model | MSE | MAE |
 |-------|--|--|
-| LSTM | 0.087 | 0.194 |
-| GCN | 0.647 | 0.744 |
-| LUCE (yearly) | 0.034 | 0.139 |
-| LUCE (monthly) | 0.034 | 0.139 |
+| LSTM | 0.008 | 0.261 |
+| GCN | 0.125 | 0.237 |
+| LUCE (yearly) | 0.007 | 0.035 |
+| LUCE (monthly) | 0.010 | 0.051 |
 
 
 ### Things to improve
 - [x] Tune hparams
 - [x] Make the script to train the model end-to-end
 - [x] Creation of adjacency matrix is of O(n^2) complexity. Optimization will save a lot of time 
-- [ ] Keep adjacecny matrices in scipy.sparse form as it takes less space
 
 
 ### Reference

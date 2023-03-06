@@ -91,9 +91,7 @@ def main(config):
             model_lstm_len = update_len
             train_index_p = train_index_batch[:, cur_month - model_lstm_len: cur_month, :]#.unsqueeze(1)
             test_index_p = test_index_batch[:, cur_month - model_lstm_len: cur_month, :]#.unsqueeze(1)
-
-
-        print('train_index_p: ' + str(train_index_p.shape))
+        #print('train_index_p: ' + str(train_index_p.shape))
         #print('test_index_p: ' + str(test_index_p.shape))
         Y_train_batch = make_Y_from_index(labels, train_index_p).to(device)
         Y_test_batch = make_Y_from_index(labels, test_index_p).to(device)
@@ -110,7 +108,7 @@ def main(config):
         # pre-training model parameter loading
         if cur_month == 1:
             if config.pretrained_path:
-                static_model = torch.load(config.lstm_checkpoint_path)
+                static_model = torch.load(config.pretrained_path)
                 model_dict = model.state_dict()
                 # all existing parameters are inherited, including LSTM and GCN of each month
                 state_dict = {'glstm.0.'+str(k): v for k, v in static_model.items() if 'glstm.0.'+str(k) in model_dict.keys()}

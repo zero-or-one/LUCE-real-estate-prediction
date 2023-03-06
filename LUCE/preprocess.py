@@ -93,14 +93,12 @@ if __name__ == '__main__':
     df = df.reset_index(drop=True)
     df_lstm = df.copy()
     if args.fill_gaps:
-        '''
+        
         # if house is not in the year, fill the missing value with price 0
         for i in list(set(df.year)):
             df_year = df[df['year'] == i]
-            
             # find average price of the year
             avg_price = df_year.price.mean()
-            
             houses = list(set(df_year.house))
             for h in all_houses:
                 if h not in houses:
@@ -118,14 +116,15 @@ if __name__ == '__main__':
                 df_new = df_year
             else:
                 df_new = pd.concat((df_new, df_year))
+        
         '''
         # if house is not in the year, fill the missing value the next year's price
         for i in list(set(df.year)):
             df_year = df[df['year'] == i]
             houses = (set(df_year.house))
             for h in all_houses - houses:
-                # find house from other years
-                row = df[df['house'] == h].iloc[0].copy()
+                # find house from the next years
+                row = df[df['house'] == h].sort_values('year').iloc[0].copy()
                 row.year = i
                 #print(row)
                 df_year = df_year.append(row, ignore_index=True)
@@ -136,6 +135,7 @@ if __name__ == '__main__':
             else:
                 df_new = pd.concat((df_new, df_year))
             #print(len(df_year))
+        '''
         df = df_new
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'house'])
@@ -167,8 +167,8 @@ if __name__ == '__main__':
         #Ah = apply_PC(Ah)
         #Ag = apply_PC(Ag)
 
-        np.save('./data/adjacency_house.npy', Ah)
-        np.save('./data/adjacency_geo.npy', Ag)
+        np.save('./data/adjacency_house_yearly.npy', Ah)
+        np.save('./data/adjacency_geo_yearly.npy', Ag)
         # It is better to save the adjacency matrix in sparse format, but it is not working
         #sparse.save_npz('./data/adjacency_house.npz', sparse.csr_matrix(Ah))
         #sparse.save_npz('./data/adjacency_geo.npz', sparse.csr_matrix(Ag))

@@ -48,6 +48,7 @@ def prepare_data(config):
     #        or not os.path.exists(config.data_path + 'labels.npy') \
     #        or not os.path.exists(config.data_path + 'train_index.npy') \
     #        or not os.path.exists(config.data_path + 'test_index.npy'):
+        print("Config: ", config.concat)
         features, labels, train_index, test_index = \
             load_data(path=config.data_path, month_len=config.seq_len, house_size=config.house_size, dataset=config.dataset, concat=config.concat)
         print('Data is generated.')
@@ -59,9 +60,14 @@ def prepare_data(config):
         print('Data is loaded.')
     adj = []
     tile_num = config.seq_len
-    if not config.yearly:
+
+    if config.yearly:
+        names = ['adjacency_house_yearly.npy', 'adjacency_geo_yearly.npy']
+    else:
+        names = ['adjacency_house_monthly.npy', 'adjacency_geo_monthly.npy']
         tile_num /= 12
-    for name in ['adjacency_house.npy', 'adjacency_geo.npy']:
+        tile_num = int(tile_num)
+    for name in names:
         a = np.load(config.data_path + name)
         a = np.tile(a, (tile_num, tile_num))
         adj.append(a)
