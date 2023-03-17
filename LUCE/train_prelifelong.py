@@ -164,6 +164,7 @@ def main(config):
                 mae_list = 0
                 rmse_list = 0
                 mse_list = 0
+                mape_list = 0
                 model.train()
                 optimizer.zero_grad()
                 #print(train_index_p[b].shape, features.shape, adj.shape)
@@ -180,10 +181,12 @@ def main(config):
                     _, out_test_price = model(adj, features, test_index_p[0])
                     val_target = Y_test_batch[0].cpu().numpy()
                     val_predict = out_test_price.detach().cpu().numpy()
-                    mse, mae, rmse = score(val_predict, val_target)
+                    #print(val_predict[0], val_target[0])
+                    mse, mae, rmse, mape = score(val_predict, val_target)
                     mse_list += mse
                     mae_list += mae
                     rmse_list += rmse
+                    mape_list += mape
                     # we can't use the pre_error function because the val_target is not a list
             end_time = time.time()
             cost_time = end_time - start_time
@@ -193,7 +196,8 @@ def main(config):
             mse = mse_list / batch_num
             mae = mae_list / batch_num
             rmse = rmse_list / batch_num
-            logger.log_testing(i, mse, mae, rmse, cost_time)
+            mape = mape_list / batch_num
+            logger.log_testing(i, mse, mae, rmse, mape, cost_time)
         torch.save(model.state_dict(), config.result_path + 'model_saved/' + 'time' + str(cur_month) + '.pkl')
 
 

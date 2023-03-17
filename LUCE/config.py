@@ -16,7 +16,7 @@ class DefaultConfig:
         self.layers = 1
         self.dropout = 0.2
         self.epoch = 100
-        self.batch_size = 350
+        self.batch_size = 512
         self.seq_len = 5*12  # the number of years in the data
         self.house_size = 217 # number of houses per year
         self.meta_size = 2
@@ -54,7 +54,7 @@ class PrelifelongConfig(DefaultConfig):
             self.pretrained_path = None
             self.concat = True
             self.seq_len = 5*12
-            self.update_len = 2*12
+            self.update_len = 1#2*12
             self.house_size = 217
             self.epoch = 15000
         

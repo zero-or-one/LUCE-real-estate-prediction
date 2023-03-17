@@ -12,7 +12,9 @@ def score(y_predict, y_target):
     y_target = y_target.reshape(1, -1)
     mse = mean_squared_error(y_predict, y_target)
     mae = mean_absolute_error(y_predict, y_target)
-    return mse, mae, np.sqrt(mse)
+    # calculate MAPE
+    mape = np.mean(np.abs((y_target - y_predict) / y_target)) * 100
+    return mse, mae, np.sqrt(mse), mape
 
 # Error calculation
 def pre_error(y_predict, y_target):

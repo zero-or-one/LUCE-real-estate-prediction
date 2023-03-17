@@ -87,10 +87,10 @@ if __name__ == '__main__':
             out_test_price = model(features)
             val_predict = out_test_price[test_index].detach().cpu().numpy()
             val_target = labels[test_index].cpu().numpy()
-            mse, mae, rmse = score(val_predict, val_target)
+            mse, mae, rmse, mape = score(val_predict, val_target)
         end_time = time.time()
         cost_time = end_time-start_time
-        logger.log_testing(i, mse, mae, rmse, cost_time)
+        logger.log_testing(i, mse, mae, rmse, mape, cost_time)
         if i % config.save_period == 0:
             logger.save_model(model, optimizer, i)
     print("MAE:{} RMSE: {}".format(mae, rmse))

@@ -29,16 +29,20 @@ class Logger():
         torch.save(model.state_dict(), self.model_file_path+'model_'+str(epoch)+'.pkl')
         torch.save(optimizer.state_dict(), self.model_file_path+'optimizer_'+str(epoch)+'.pkl')
 
-    def log_testing(self, epoch, mse, mae, rmse, cost_time):
-        if epoch % 100 == 0:
+    def log_testing(self, epoch, mse, mae, rmse, mape, cost_time):
+        if epoch % 10 == 0:
             with open(self.result_file_path+'loss_error.txt', 'a+') as f:
-                f.write("Test MSE: {} MAE:{} RMSE: {} cost_time:{}\n".format(mse,mae,rmse,cost_time))
+                f.write("Test MSE: {} MAE: {} RMSE: {} cost_time: {}\n".format(mse,mae,rmse, mape, cost_time))
             with open(self.other_file_path + 'valid_RMSE.txt', 'a+') as f:
                 f.write("{}\n".format(rmse))
-        print("Test MSE: {} MAE:{} RMSE: {} cost_time:{}".format(mse, mae, rmse, cost_time))
+            with open(self.other_file_path + 'valid_MAPE.txt', 'a+') as f:
+                f.write("{}\n".format(mape))
+            with open(self.other_file_path + 'valid_MAE.txt', 'a+') as f:
+                f.write("{}\n".format(mae))
+        print("Test MSE: {} MAE: {} RMSE: {} MAPE: {} cost_time: {}".format(mse, mae, rmse, mape, cost_time))
     
     def log_training(self, epoch, avg_training_loss):
-        if epoch % 100 == 0:
+        if epoch % 10 == 0:
             with open(self.result_file_path+'loss_error.txt', 'a+') as f:
                 f.write("Epoch:{}  Training loss:{}\n".format(epoch, avg_training_loss))
             with open(self.other_file_path+'train_loss.txt', 'a+') as f:

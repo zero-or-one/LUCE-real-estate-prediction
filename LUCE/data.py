@@ -67,6 +67,8 @@ def load_data(path, month_len, house_size, dataset, concat=False):
     print(test_index)
     print(train_index.shape, test_index.shape)
     '''
+    '''
+    # working code
     train_index = np.zeros((month_len-1, house_size))
     test_index = np.zeros((month_len-1, house_size))
     index = np.arange(0, data_size)
@@ -78,6 +80,21 @@ def load_data(path, month_len, house_size, dataset, concat=False):
         test_index[i] = index[(i+1)*house_size: (i+2)*house_size]
     #print(train_index.shape, test_index.shape)
     #exit()
+    '''
+    
+    # working code
+    train_index = np.zeros((month_len-1, int(house_size*0.8)))
+    test_index = np.zeros((month_len-1, house_size-int(house_size*0.8)))
+    index = np.arange(0, data_size)
+    #print(month_len, train_index.shape, test_index.shape, index.shape)
+    for i in range(month_len - 1):
+        ind = index[i*house_size: (i+1)*house_size]
+        #print(len(train_index[i]), i, 0.8*ind.shape[0])
+        train_index[i] = ind[:int(0.8*len(ind))]
+        test_index[i] = ind[int(0.8*len(ind)):]
+    #print(train_index.shape, test_index.shape)
+    
+
     np.save(path + 'features.npy', features)
     np.save(path + 'labels.npy', labels)
     np.save(path + 'train_index.npy', train_index)
