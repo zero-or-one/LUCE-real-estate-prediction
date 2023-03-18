@@ -82,6 +82,7 @@ if __name__ == '__main__':
     df = df.sort_values(by=['year', 'month', 'house'])
     df = df.reset_index(drop=True)
     df_lstm = df.copy()
+    
     if args.fill_gaps:
         # if house is not in the month, fill the missing value with price 0
         for i in list(set(df.year)):
@@ -105,7 +106,7 @@ if __name__ == '__main__':
                         #row.house = h
                         
                         # op2: fill with 0
-                        #row.price = 0
+                        row.price = 0
                         row.year = i
                         row.month = j
                         
@@ -119,6 +120,7 @@ if __name__ == '__main__':
             else:
                 df_new = pd.concat((df_new, df_year))
         df = df_new
+    
     #df_lstm = df.copy()
     df = df.sort_values(by=['year', 'month', 'house'])
     # op3 fill with price of the same house in next month
@@ -144,9 +146,9 @@ if __name__ == '__main__':
                 else:
                     continue
                 row.year = i
-                row.year = j
+                row.month = j
                 df_year = df_year.append(row, ignore_index=True)
-                
+
         df_year = df_year.sort_values(by=['house'])
         df_year = df_year.reset_index(drop=True)
         if i == min(df.year):

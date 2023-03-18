@@ -151,7 +151,6 @@ def main(config):
             model_dict.update(gcn_dict)
             model.load_state_dict(model_dict)
             print('old model from previous time loaded!')
-        
 
         optimizer = torch.optim.Adam(model.parameters(), lr=config.lr, weight_decay=config.weight_decay)
         loss_criterion = eval(config.loss)
@@ -178,10 +177,11 @@ def main(config):
                 # evaluate the model on the test set after training
                 with torch.no_grad():
                     model.eval()
-                    _, out_test_price = model(adj, features, test_index_p[0])
-                    val_target = Y_test_batch[0].cpu().numpy()
+                    _, out_test_price = model(adj, features, test_index_p[b])
+                    val_target = Y_test_batch[b].cpu().numpy()
                     val_predict = out_test_price.detach().cpu().numpy()
-                    #print(val_predict[0], val_target[0])
+                    #print("val_predict", val_predict)
+                    #print("val_target", val_target)
                     mse, mae, rmse, mape = score(val_predict, val_target)
                     mse_list += mse
                     mae_list += mae

@@ -29,6 +29,7 @@ class DefaultConfig:
         self.num_layers = 3
         self.bidirectional = True
         self.concat = False
+        self.yearly = True
 
 
 class PrelifelongConfig(DefaultConfig):
@@ -66,7 +67,9 @@ class GCNlstm_staticConfig(DefaultConfig):
         self.model = 'GCNlstm_static(config)'
         self.lr = 1e-4
         self.epoch = 20000
-
+        self.yearly = False
+        self.dataset =  'processed_data.csv' if self.yearly else 'processed_data_monthly.csv'
+        self.concat = not self.yearly
 
 
 class LSTMConfig(DefaultConfig):
@@ -74,7 +77,7 @@ class LSTMConfig(DefaultConfig):
         super().__init__(device)
         self.result_path = 'result_lstm/'
         self.model = 'LSTM(config)'
-        self.dataset = 'processed_data_lstm.csv'
+        self.dataset = 'processed_data_lstm.csv' #'processed_data_monthly.csv'#
         self.hidden_dim = 256
         self.num_layers = 3
         self.lr = 1e-4

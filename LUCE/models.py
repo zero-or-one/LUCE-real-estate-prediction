@@ -91,10 +91,14 @@ class r_gcn2lv_1LSTMs(nn.Module):
         self.all_month = all_month
         self.month_len = month_len
         self.glstm_list = []
+        
         for i in range(month_len):
             self.glstm_list.append(GCN2lv(nfeat=gcn_input_dim, gc1_outdim=gc1_out_dim, gc2_outdim=lstm_input_dim,
                                           dropout=dropout, meta_size=meta_size))
         self.glstm = nn.ModuleList(self.glstm_list)
+        
+        #self.glstm = GCN2lv(nfeat=gcn_input_dim, gc1_outdim=gc1_out_dim, gc2_outdim=lstm_input_dim,
+        #                    dropout=dropout, meta_size=meta_size)
         self.lstm = nn.LSTM(input_size=lstm_input_dim, hidden_size=self.hidden_dim, num_layers=layers)
         # self.linear_gcn = nn.Linear(hidden_dim, gcn_input_dim)  # 暂时输入输入维度一致，后续可再调整
         self.linear_price = nn.Linear(gcn_input_dim, label_out_dim)
