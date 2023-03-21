@@ -35,7 +35,7 @@ class DefaultConfig:
 class PrelifelongConfig(DefaultConfig):
     def __init__(self, device):
         super().__init__(device)
-        self.yearly = False # Wheither to use yearly data or monthly data
+        self.yearly = True # Wheither to use yearly data or monthly data
         if self.yearly:
             self.result_path = 'result_prelifelong_yearly/'
             self.dataset = 'processed_data_yearly.csv'
@@ -77,7 +77,7 @@ class LSTMConfig(DefaultConfig):
         super().__init__(device)
         self.result_path = 'result_lstm/'
         self.model = 'LSTM(config)'
-        self.dataset = 'processed_data_lstm.csv' #'processed_data_monthly.csv'#
+        self.dataset = 'processed_data_monthly.csv'#'processed_data_lstm.csv' #
         self.hidden_dim = 256
         self.num_layers = 3
         self.lr = 1e-4

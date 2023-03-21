@@ -195,6 +195,7 @@ if __name__ == '__main__':
 
     # prepare data for training using one-hot encoding
     print(df.shape)
+    # one-hot encoding except for price
     df = pd.get_dummies(df)
     # replance month and year with single number
     df['month'] = df['month'].apply(lambda x: x-1)
@@ -207,6 +208,7 @@ if __name__ == '__main__':
     df = df[[c for c in df if c not in end_col] + [c for c in end_col if c in df]]
     # scale the data
     scaler = MinMaxScaler(feature_range=(-1, 1))
+    # 
     df.iloc[:, :-2] = scaler.fit_transform(df.iloc[:, :-2])
     # save the scaler
     joblib.dump(scaler, './data/scaler.pkl')

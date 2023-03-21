@@ -87,6 +87,8 @@ if __name__ == '__main__':
             out_test_price = model(features)
             val_predict = out_test_price[test_index].detach().cpu().numpy()
             val_target = labels[test_index].cpu().numpy()
+            print("val_predict: ", val_predict)
+            print("val_target: ", val_target)
             mse, mae, rmse, mape = score(val_predict, val_target)
         end_time = time.time()
         cost_time = end_time-start_time

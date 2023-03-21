@@ -11,6 +11,7 @@ import torch
 from torch.autograd import Variable
 import torch.nn as nn
 import math
+from sklearn.externals import joblib 
 
 
 
@@ -169,6 +170,7 @@ def main(config):
                 #print(train_index_p[b].shape, features.shape, adj.shape)
                 new_embedding, out_price = model(adj, features, train_index_p[b])
                 new_embedding = Variable(new_embedding.data, requires_grad=True)
+                #print("out_price", out_price)
                 loss = loss_criterion(out_price, Y_train_batch[b])
                 loss.backward()  
                 optimizer.step()
@@ -188,6 +190,33 @@ def main(config):
                     rmse_list += rmse
                     mape_list += mape
                     # we can't use the pre_error function because the val_target is not a list
+                    val_pred, val_tar = None, None
+                    if i % 250 == 0:
+                        # save val predict and val target
+                        # load scaler.pkl to get the original value
+                        scaler = joblib.load(config.data_path + 'scaler.pkl')
+                        #print(val_predict.shape, val_target.shape)
+                        # make the shape be 1, 217, 339 so the last columnt is the value
+                        padding = np.zeros((val_predict.shape[0], val_predict.shape[1], 338))
+                        val_predict = np.concatenate((padding, val_predict), axis=2)
+                        val_target = np.concatenate((padding, val_target), axis=2)
+                        # apply the inverse transform to each dimension
+                        for j in range(val_predict.shape[0]):
+                            val_predict[j] = scaler.inverse_transform(val_predict[j])
+                            val_target[j] = scaler.inverse_transform(val_target[j])
+                        val_predict = val_predict[:, :, -1]
+                        val_target = val_target[:, :, -1]
+                        # concatenate the val_pred and val_tar
+                        if val_pred is None:
+                            val_pred = val_predict
+                            val_tar = val_target
+                        else:
+                            val_pred = np.concatenate((val_pred, val_predict), axis=0)
+                            val_tar = np.concatenate((val_tar, val_target), axis=0)
+            if val_pred is not None:
+                np.save(config.result_path + 'val_predict/' + 'time' + str(cur_month) + '_epoch' + str(i) + '.npy', val_pred)
+                np.save(config.result_path + 'val_target/' + 'time' + str(cur_month) + '.npy', val_tar)
+                del val_pred, val_tar
             end_time = time.time()
             cost_time = end_time - start_time
             

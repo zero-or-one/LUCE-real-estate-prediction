@@ -55,19 +55,9 @@ def load_data(path, month_len, house_size, dataset, concat=False):
     #index = [i for i in range(data_size)]
     train_index = []
     test_index = []
-    '''
-    for i in range(month_len - 1):
-        train_index.append(index[i*house_size: (i+1)*house_size])
-        test_index.append(index[(i+1)*house_size: (i+2)*house_size])
-    # make numpy array for indexing
-    train_index = np.array(train_index)
-    test_index = np.array(test_index)
-    train_index = np.array([np.array(x) for x in train_index])
-    test_index = np.array([np.array(x) for x in test_index])
-    print(test_index)
-    print(train_index.shape, test_index.shape)
-    '''
-    '''
+
+    
+    # luce split
     # working code
     train_index = np.zeros((month_len-1, house_size))
     test_index = np.zeros((month_len-1, house_size))
@@ -79,9 +69,9 @@ def load_data(path, month_len, house_size, dataset, concat=False):
         #print(i,test_index[i].shape, index[(i+1)*house_size: (i+2)*house_size].shape)
         test_index[i] = index[(i+1)*house_size: (i+2)*house_size]
     #print(train_index.shape, test_index.shape)
-    #exit()
-    '''
     
+    '''
+    # 0.8 train 0.2 test split
     # working code
     train_index = np.zeros((month_len-1, int(house_size*0.8)))
     test_index = np.zeros((month_len-1, house_size-int(house_size*0.8)))
@@ -93,7 +83,7 @@ def load_data(path, month_len, house_size, dataset, concat=False):
         train_index[i] = ind[:int(0.8*len(ind))]
         test_index[i] = ind[int(0.8*len(ind)):]
     #print(train_index.shape, test_index.shape)
-    
+    '''
 
     np.save(path + 'features.npy', features)
     np.save(path + 'labels.npy', labels)
