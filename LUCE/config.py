@@ -7,7 +7,7 @@ class DefaultConfig:
     def __init__(self, device):
         self.device = device
         self.data_path = './data/'
-        self.dataset = 'processed_data.csv'
+        self.dataset = 'processed_data_yearly.csv'
         self.result_path = 'result/'
         self.lstm_inputdim = 500
         self.input_size = 514
@@ -15,12 +15,12 @@ class DefaultConfig:
         self.gc2_outdim = 400
         self.layers = 1
         self.dropout = 0.2
-        self.epoch = 100
+        self.epoch = 10000
         self.batch_size = 512
-        self.seq_len = 5*12  # the number of years in the data
-        self.house_size = 217 # number of houses per year
+        self.seq_len = 17  # the number of years in the data
+        self.house_size = 184 # number of houses per year
         self.meta_size = 2
-        self.update_len = 4
+        self.update_len = 3
         self.train_ratio = 0.9
         self.lr = 1e-3
         self.weight_decay = 5e-4
@@ -28,8 +28,8 @@ class DefaultConfig:
         self.save_period = 300
         self.num_layers = 3
         self.bidirectional = True
-        self.concat = False
         self.yearly = True
+        self.concat = not self.yearly
 
 
 class PrelifelongConfig(DefaultConfig):
@@ -43,7 +43,7 @@ class PrelifelongConfig(DefaultConfig):
             self.pretrained_path = None
             self.concat = False
             self.seq_len = 17
-            self.update_len = 10
+            self.update_len = 4
             self.house_size = 184
             self.layers = 1
             self.lr = 1e-3
@@ -77,7 +77,7 @@ class LSTMConfig(DefaultConfig):
         super().__init__(device)
         self.result_path = 'result_lstm/'
         self.model = 'LSTM(config)'
-        self.dataset = 'processed_data_monthly.csv'#'processed_data_lstm.csv' #
+        self.dataset = 'processed_data_yearly.csv' #'processed_data_lstm.csv' #
         self.hidden_dim = 256
         self.num_layers = 3
         self.lr = 1e-4
@@ -91,3 +91,4 @@ class GCNConfig(DefaultConfig):
         self.result_path = 'result_gcn/'
         self.model = 'GCN2lv_static(config)'
         self.lr = 1e-4
+        self.epoch = 30000

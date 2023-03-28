@@ -11,10 +11,8 @@ class Logger():
         for output_path in [self.result_file_path, self.model_file_path, self.other_file_path]:
             if not os.path.isdir(output_path):
                 os.makedirs(output_path)
-        if not os.path.isdir(self.result_file_path+'val_predict/'):
-            os.makedirs(self.result_file_path+'val_predict/')
-        if not os.path.isdir(self.result_file_path+'val_target/'):
-            os.makedirs(self.result_file_path+'val_target/')
+        if not os.path.isdir(self.result_file_path+'predictions/'):
+            os.makedirs(self.result_file_path+'predictions/')
 
     def save_parameters(self, config):
         with open(self.result_file_path+'parameters.txt', 'w') as f:

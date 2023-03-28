@@ -80,7 +80,7 @@ def main(config):
     labels = torch.tensor(labels).to(device)
 
     #  model training
-    for cur_month in range(1, config.seq_len+1):
+    for cur_month in range(4, config.seq_len+1):
         # A month corresponds to a model model, and parameters are updated in the model of this month; cur_month represents the last month of the current training
          # r_gcnLSTMs starts training from the first month of data input each time, and gradually expands the model to the length of cur_month
          # According to update_len, when cur_month exceeds update_len, only update the parameters of [cur_month-update_len: cur_month] month each time
@@ -191,7 +191,7 @@ def main(config):
                     mape_list += mape
                     # we can't use the pre_error function because the val_target is not a list
                     val_pred, val_tar = None, None
-                    if i % 250 == 0:
+                    if i == 9999 or i == 0:
                         # save val predict and val target
                         # load scaler.pkl to get the original value
                         scaler = joblib.load(config.data_path + 'scaler.pkl')
@@ -214,8 +214,8 @@ def main(config):
                             val_pred = np.concatenate((val_pred, val_predict), axis=0)
                             val_tar = np.concatenate((val_tar, val_target), axis=0)
             if val_pred is not None:
-                np.save(config.result_path + 'val_predict/' + 'time' + str(cur_month) + '_epoch' + str(i) + '.npy', val_pred)
-                np.save(config.result_path + 'val_target/' + 'time' + str(cur_month) + '.npy', val_tar)
+                np.save(config.result_path + 'predictions/' + 'pred_time' + str(cur_month) + '_epoch' + str(i) + '.npy', val_pred)
+                np.save(config.result_path + 'predictions/' + 'target_time' + str(cur_month) + '_epoch' + str(i) + '.npy', val_tar)
                 del val_pred, val_tar
             end_time = time.time()
             cost_time = end_time - start_time

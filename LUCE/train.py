@@ -10,6 +10,7 @@ from data import *
 from utils import *
 from logger import Logger
 from config import *
+from sklearn.externals import joblib 
 
 
 
@@ -31,6 +32,8 @@ if __name__ == '__main__':
     result_path = config.result_path
     logger = Logger(result_path, result_path + 'model_saved/', result_path + 'others/')
     logger.save_parameters(config)
+
+    scaler = joblib.load(config.data_path + 'scaler.pkl')
 
     adj, features, labels, train_index, test_index = prepare_data(config)
 
@@ -91,6 +94,17 @@ if __name__ == '__main__':
             val_predict = out_test_price[test_index].detach().cpu().numpy()
             val_target = labels[test_index].cpu().numpy()
             mse, mae, rmse, mape = score(val_predict, val_target)
+            if i % 2000 == 0:
+                padding = np.zeros((val_predict.shape[0], 338))
+                val_predict = np.concatenate((padding, val_predict), axis=1)
+                val_target = np.concatenate((padding, val_target), axis=1)
+                # apply the inverse transform to each dimension
+                val_predict = scaler.inverse_transform(val_predict)
+                val_target = scaler.inverse_transform(val_target)
+                val_predict = val_predict[:, -1]
+                val_target = val_target[:, -1]
+                np.save(result_path + 'others/' + 'val_predict_' + str(i) + '.npy', val_predict)
+                np.save(result_path + 'others/' + 'val_target_' + str(i) + '.npy', val_target)
         end_time = time.time()
         cost_time = end_time-start_time
         logger.log_testing(i, mse, mae, rmse, mape, cost_time)

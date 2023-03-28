@@ -66,7 +66,7 @@ if __name__ == '__main__':
     parser.add_argument("--fill_gaps", type=int, default=1)
     args = parser.parse_args()
 
-    df = pd.read_csv(args.data_path, index_col=False)
+    df = pd.read_csv(args.data_path, index_col=False, encoding="utf8")
     df = df.dropna()
     df['year'] = pd.DatetimeIndex(df['yyyymmdd']).year
     #df['month'] = pd.DatetimeIndex(df['yyyymmdd']).month
