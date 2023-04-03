@@ -113,7 +113,11 @@ class r_gcn2lv_1LSTMs(nn.Module):
         """
         Nodes, num_features = x.size()
         month_len, batch_size = y_index.size()
-        # print('y_index: ' + str(y_index.shape))
+        #print('y_index: ' + str(y_index.shape))
+        #print('x'+str(x.size()))
+        #print(self.all_month, self.month_len)
+        #exit()
+        
         # print('month_len: '+ str(month_len))
         house_size = int(Nodes / self.all_month)
         out_allmonth = x

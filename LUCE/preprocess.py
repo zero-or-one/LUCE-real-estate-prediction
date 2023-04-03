@@ -180,9 +180,19 @@ if __name__ == '__main__':
     df = df[[c for c in df if c not in end_col] + [c for c in end_col if c in df]]
     # scale the data
     scaler = MinMaxScaler(feature_range=(-1, 1))
-    df.iloc[:, :-2] = scaler.fit_transform(df.iloc[:, :-2])
+    # apply scaler to numeric columns only
+    numeric_cols = ['area_index', 'households', 'supply_pyeong', 'private_area',\
+     'private_pyeong', 'private_area_rate', 'room_count', \
+     'bathroom_count', 'total_parking', 'parking_households', 'lon_x', 'lat_y']
+    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+    #df.iloc[:, :-3] = scaler.fit_transform(df.iloc[:, :-3])
     # save the scaler
     joblib.dump(scaler, './data/scaler.pkl')
+    # use different scaler for price
+    scaler_price = MinMaxScaler(feature_range=(-1, 1))
+    df.iloc[:, -3] = scaler_price.fit_transform(df.iloc[:, -3].values.reshape(-1, 1))
+    # save the scaler
+    joblib.dump(scaler_price, './data/scaler_price.pkl')
 
     # prepare data for training using one-hot encoding
     df_lstm = pd.get_dummies(df_lstm)

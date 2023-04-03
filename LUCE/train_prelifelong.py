@@ -80,7 +80,7 @@ def main(config):
     labels = torch.tensor(labels).to(device)
 
     #  model training
-    for cur_month in range(4, config.seq_len+1):
+    for cur_month in range(1, config.seq_len+1):
         # A month corresponds to a model model, and parameters are updated in the model of this month; cur_month represents the last month of the current training
          # r_gcnLSTMs starts training from the first month of data input each time, and gradually expands the model to the length of cur_month
          # According to update_len, when cur_month exceeds update_len, only update the parameters of [cur_month-update_len: cur_month] month each time
@@ -192,6 +192,7 @@ def main(config):
                     # we can't use the pre_error function because the val_target is not a list
                     val_pred, val_tar = None, None
                     if i == 9999 or i == 0:
+                        '''
                         # save val predict and val target
                         # load scaler.pkl to get the original value
                         scaler = joblib.load(config.data_path + 'scaler.pkl')
@@ -206,6 +207,12 @@ def main(config):
                             val_target[j] = scaler.inverse_transform(val_target[j])
                         val_predict = val_predict[:, :, -1]
                         val_target = val_target[:, :, -1]
+                        '''
+                        scaler = joblib.load(config.data_path + 'scaler_price.pkl')
+                        # apply the inverse transform to each dimension
+                        for j in range(val_predict.shape[0]):
+                            val_predict[j] = scaler.inverse_transform(val_predict[j])
+                            val_target[j] = scaler.inverse_transform(val_target[j])                      
                         # concatenate the val_pred and val_tar
                         if val_pred is None:
                             val_pred = val_predict

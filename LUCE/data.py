@@ -58,6 +58,7 @@ def load_data(path, month_len, house_size, dataset, concat=False):
 
     
     # luce split
+    
     # working code
     train_index = np.zeros((month_len-1, house_size))
     test_index = np.zeros((month_len-1, house_size))

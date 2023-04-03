@@ -43,7 +43,7 @@ class PrelifelongConfig(DefaultConfig):
             self.pretrained_path = None
             self.concat = False
             self.seq_len = 17
-            self.update_len = 4
+            self.update_len = 6
             self.house_size = 184
             self.layers = 1
             self.lr = 1e-3
