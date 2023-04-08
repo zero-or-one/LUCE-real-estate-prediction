@@ -42,9 +42,9 @@ class PrelifelongConfig(DefaultConfig):
             self.model = 'r_gcn2lv_1LSTMs(config)'
             self.pretrained_path = None
             self.concat = False
-            self.seq_len = 17
-            self.update_len = 6
-            self.house_size = 184
+            self.seq_len = 12#17
+            self.update_len = 4#6
+            self.house_size = 1000#184
             self.layers = 1
             self.lr = 1e-3
             self.epoch = 10000

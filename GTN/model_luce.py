@@ -86,7 +86,7 @@ class LUCE(nn.Module):
                 layers.append(GTLayer(num_edge, num_channels, num_nodes, first=True))
             else:
                 layers.append(GTLayer(num_edge, num_channels, num_nodes, first=False))
-        self.layers = nn.ModuleList(layers)
+        self.glstm = nn.ModuleList(layers)
         self.loss = nn.L1Loss()
         self.gcn = GCNConv(in_channels=self.w_in, out_channels=w_out, args=args)
         self.lstm = nn.LSTM(input_size=self.w_out*self.num_channels, hidden_size=self.hidden_dim, num_layers=lstm_layers)
@@ -123,9 +123,9 @@ class LUCE(nn.Module):
         Ws = []
         for i in range(self.num_layers):
             if i == 0:
-                H, W = self.layers[i](A, num_nodes, eval=eval)
+                H, W = self.glstm[i](A, num_nodes, eval=eval)
             else:                
-                H, W = self.layers[i](A, num_nodes, H, eval=eval)
+                H, W = self.glstm[i](A, num_nodes, H, eval=eval)
             H = self.normalization(H, num_nodes)
             Ws.append(W)
         for i in range(self.num_channels):

@@ -103,9 +103,11 @@ def train_val_pipeline(MODEL_NAME, dataset_path, params, net_params, result_path
                 model_lstm_len = cur_month
                 #year = cur_month + 2005
                 df = df[df.month_year <= cur_month]
+                df_test = df[df.month_year == cur_month+1]
             else:
                 model_lstm_len = update_len
                 df = df[(df.month_year <= cur_month) & (df.month_year > cur_month-update_len)]
+                #df_test = df[(df.month_year)]
             dataset = RealEstateDGL(net_params['data_dir'], net_params['adjacency_list'], df)
 
             if net_params['lap_pos_enc']:

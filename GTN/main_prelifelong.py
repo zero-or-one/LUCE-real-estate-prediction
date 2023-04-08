@@ -11,6 +11,8 @@ from sklearn.metrics import f1_score as sk_f1_score
 from utils import init_seed, _norm
 import copy
 import pandas as pd
+from sklearn.externals import joblib 
+
 
 if __name__ == '__main__':
     init_seed(seed=777)
@@ -19,7 +21,7 @@ if __name__ == '__main__':
                         help='Model')
     parser.add_argument('--dataset', type=str,
                         help='Dataset', default='REALESTATE')
-    parser.add_argument('--epoch', type=int, default=1000,
+    parser.add_argument('--epoch', type=int, default=10000,
                         help='Training Epochs')
     parser.add_argument('--node_dim', type=int, default=64,
                         help='hidden dimensions')
@@ -134,32 +136,8 @@ if __name__ == '__main__':
         node_features = torch.from_numpy(node_features).type(torch.FloatTensor).to(device)
         train_node_features = node_features[nids[0]]
         valid_node_features = node_features[nids[1]]
-        '''
-        # initialize a model
-        if args.model == 'GTN' or args.model == 'LUCE':
-            model = GTN(num_edge=len(A),
-                                num_channels=num_channels,
-                                w_in = node_features.shape[1],
-                                w_out = node_dim,
-                                num_layers=num_layers,
-                                num_nodes=num_nodes,
-                                args=args)        
-        elif args.model == 'FastGTN':
-            if args.pre_train and l == 1:
-                pre_trained_fastGTNs = []
-                for layer in range(args.num_FastGTN_layers):
-                    pre_trained_fastGTNs.append(copy.deepcopy(model.fastGTNs[layer].layers))
-            while len(A) > num_edge_type:
-                del A[-1]
-            model = FastGTNs(num_edge_type=len(A),
-                            w_in = node_features.shape[1],
-                            num_nodes = args.batch_size,
-                            args = args)
-            if args.pre_train and l > 0:
-                for layer in range(args.num_FastGTN_layers):
-                    model.fastGTNs[layer].layers = pre_trained_fastGTNs[layer]
-        '''
-        '''
+
+        
         # pre-training model parameter loading
         if cur_month == 1:
             if args.pretrained_path:
@@ -206,7 +184,7 @@ if __name__ == '__main__':
             model_dict.update(gcn_dict)
             model.load_state_dict(model_dict)
             print('old model from previous time loaded!')
-        '''
+        
 
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
         gamma = args.lr_decay
@@ -217,6 +195,7 @@ if __name__ == '__main__':
         #model = nn.DataParallel(model)
         loss = nn.L1Loss()
         Ws = []
+        scaler = joblib.load(config.data_path + 'scaler.pkl')
         for epoch in range(epochs):
             # print('Epoch ',i)
             avg_train_loss = 0
@@ -248,6 +227,7 @@ if __name__ == '__main__':
             scheduler.step()
             # validation
             model.eval()
+            val_pred, val_tar = None, None
             for batch in range(0, len(valid_node_features), args.batch_size):
                 batch_size = min(args.batch_size, len(valid_node_features)-batch)
                 num_batches = len(valid_node_features)//batch_size
@@ -260,6 +240,32 @@ if __name__ == '__main__':
                         val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size], epoch=epoch)
                     else:
                         val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size])
+                if epoch % 9999 == 0:
+                    y_target = valid_target[batch:batch+batch_size]
+                    y_target = y_target.detach().cpu().numpy()
+                    y_valid = y_valid.detach().cpu().numpy()
+
+                    padding = np.zeros((val_predict.shape[0], val_predict.shape[1], 338))
+                    val_predict = np.concatenate((padding, val_predict), axis=2)
+                    val_target = np.concatenate((padding, val_target), axis=2)
+                    # apply the inverse transform to each dimension
+                    for j in range(val_predict.shape[0]):
+                        val_predict[j] = scaler.inverse_transform(val_predict[j])
+                        val_target[j] = scaler.inverse_transform(val_target[j])
+                    val_predict = val_predict[:, :, -1]
+                    val_target = val_target[:, :, -1]
+                    # concatenate the val_pred and val_tar
+                    if val_pred is None:
+                        val_pred = val_predict
+                        val_tar = val_target
+                    else:
+                        val_pred = np.concatenate((val_pred, val_predict), axis=0)
+                        val_tar = np.concatenate((val_tar, val_target), axis=0)
+            if val_pred is not None:
+                np.save('./predictions/' + 'pred_time' + str(cur_month) + '_epoch' + str(i) + '.npy', val_pred)
+                np.save('./predictions/' + 'target_time' + str(cur_month) + '_epoch' + str(i) + '.npy', val_tar)
+                del val_pred, val_tar
+                
                 avg_valid_loss += val_loss.detach().cpu().numpy() / num_batches
                 avg_valid_mse_error += val_mse / num_batches
             print('Epoch: {}\n Valid - Loss: {}\n Valid - MSE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error))

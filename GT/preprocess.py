@@ -73,7 +73,7 @@ if __name__ == '__main__':
     drop_col = ['building_type', 'Unnamed: 0', 'compare', 'updated_at', 'yyyymmdd',
         'migrated_at', 'Unnamed: 0_y', 'danji_id', 'supply_area', 'pyeong_type', 'supply_pyeong_rep' ,
          'average_maintenance_cost','average_summer_maintenance_cost', 'average_winter_maintenance_cost', 
-         'danji_id_hash']
+         'danji_id_hash', 'lon_x', 'lat_y', 'bjd_code']
     df = df.drop(drop_col, axis=1)
     df = df.reset_index(drop=True)
 
@@ -146,8 +146,8 @@ if __name__ == '__main__':
             'private_area_rate', 'entrance_type_x', 'room_count', 'bathroom_count',
             'total_parking', 'parking_households', 'entrance_type_y', 
             'heat_system', 'heat_fuel', 'floor']
-        geo_meta = ['house', 'total_households', 'dongs', 'bjd_code', 'sd', 
-        'sgg', 'emd', 'lon_x', 'lat_y', 'construct_name']
+        geo_meta = ['house', 'zipcode', 'lat', 'long', 'sqft_living15', 
+        'sqft_lot15']
         # we just use random year
         df_single = df[df['year']==2006]
         df_h = df_single[house_meta]
