@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import argparse
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.externals import joblib 
-
+#from sklearn.externals import joblib 
+import joblib
 
 def construct_graph_from_df(df, G=None, hid='house'):
     '''
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     parser.add_argument("--fill_gaps", type=int, default=1)
     args = parser.parse_args()
 
-    df = pd.read_csv(args.data_path, index_col=False)
+    df = pd.read_csv(args.data_path, index_col=False, encoding="utf8")
     df = df.dropna()
     df['year'] = pd.DatetimeIndex(df['yyyymmdd']).year
     #df['month'] = pd.DatetimeIndex(df['yyyymmdd']).month
@@ -74,7 +74,7 @@ if __name__ == '__main__':
     drop_col = ['building_type', 'Unnamed: 0', 'compare', 'updated_at', 'yyyymmdd',
         'migrated_at', 'Unnamed: 0_y', 'danji_id', 'supply_area', 'pyeong_type', 'supply_pyeong_rep' ,
          'average_maintenance_cost','average_summer_maintenance_cost', 'average_winter_maintenance_cost', 
-         'danji_id_hash', 'bjd_code', 'lon_x', 'lat_y']
+         'danji_id_hash', 'lon_x', 'lat_y', 'bjd_code']
     df = df.drop(drop_col, axis=1)
     df = df.reset_index(drop=True)
 
@@ -93,14 +93,12 @@ if __name__ == '__main__':
     df = df.reset_index(drop=True)
     df_lstm = df.copy()
     if args.fill_gaps:
-        '''
+        
         # if house is not in the year, fill the missing value with price 0
         for i in list(set(df.year)):
             df_year = df[df['year'] == i]
-            
             # find average price of the year
             avg_price = df_year.price.mean()
-            
             houses = list(set(df_year.house))
             for h in all_houses:
                 if h not in houses:
@@ -118,14 +116,15 @@ if __name__ == '__main__':
                 df_new = df_year
             else:
                 df_new = pd.concat((df_new, df_year))
+        
         '''
         # if house is not in the year, fill the missing value the next year's price
         for i in list(set(df.year)):
             df_year = df[df['year'] == i]
             houses = (set(df_year.house))
             for h in all_houses - houses:
-                # find house from other years
-                row = df[df['house'] == h].iloc[0].copy()
+                # find house from the next years
+                row = df[df['house'] == h].sort_values('year').iloc[0].copy()
                 row.year = i
                 #print(row)
                 df_year = df_year.append(row, ignore_index=True)
@@ -136,6 +135,7 @@ if __name__ == '__main__':
             else:
                 df_new = pd.concat((df_new, df_year))
             #print(len(df_year))
+        '''
         df = df_new
     # sort houses by year and house id
     df = df.sort_values(by=['year', 'house'])
@@ -167,8 +167,8 @@ if __name__ == '__main__':
         #Ah = apply_PC(Ah)
         #Ag = apply_PC(Ag)
 
-        np.save('./data/adjacency_house.npy', Ah)
-        np.save('./data/adjacency_geo.npy', Ag)
+        np.save('./data/adjacency_house_yearly.npy', Ah)
+        np.save('./data/adjacency_geo_yearly.npy', Ag)
         # It is better to save the adjacency matrix in sparse format, but it is not working
         #sparse.save_npz('./data/adjacency_house.npz', sparse.csr_matrix(Ah))
         #sparse.save_npz('./data/adjacency_geo.npz', sparse.csr_matrix(Ag))
@@ -180,9 +180,19 @@ if __name__ == '__main__':
     df = df[[c for c in df if c not in end_col] + [c for c in end_col if c in df]]
     # scale the data
     scaler = MinMaxScaler(feature_range=(-1, 1))
-    df.iloc[:, :-2] = scaler.fit_transform(df.iloc[:, :-2])
+    # apply scaler to numeric columns only
+    numeric_cols = ['area_index', 'households', 'supply_pyeong', 'private_area',\
+     'private_pyeong', 'private_area_rate', 'room_count', \
+     'bathroom_count', 'total_parking', 'parking_households']
+    df[numeric_cols] = scaler.fit_transform(df[numeric_cols])
+    #df.iloc[:, :-3] = scaler.fit_transform(df.iloc[:, :-3])
     # save the scaler
     joblib.dump(scaler, './data/scaler.pkl')
+    # use different scaler for price
+    scaler_price = MinMaxScaler(feature_range=(-1, 1))
+    df.iloc[:, -3] = scaler_price.fit_transform(df.iloc[:, -3].values.reshape(-1, 1))
+    # save the scaler
+    joblib.dump(scaler_price, './data/scaler_price.pkl')
 
     # prepare data for training using one-hot encoding
     df_lstm = pd.get_dummies(df_lstm)

@@ -11,8 +11,8 @@ from sklearn.metrics import f1_score as sk_f1_score
 from utils import init_seed, _norm
 import copy
 import pandas as pd
-from sklearn.externals import joblib 
-
+#from sklearn.externals import joblib 
+import joblib
 
 if __name__ == '__main__':
     init_seed(seed=777)
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     num_layers = args.num_layers
 
     A = []
-    adj_matrix = np.load('dataset/{}.npy'.format("adjacency_house"))
+    adj_matrix = np.load('data/{}.npy'.format("adjacency_house_yearly"))
     #for i in range(adj_matrix.shape[0]):
     edge_index = torch.from_numpy(np.vstack(adj_matrix.nonzero())).to(torch.long).to(device)
     # add target node
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     update_len = 2*12
     house_size = 217
 
-    node_features = pd.read_csv('dataset/{}.csv'.format('processed_data'))
+    node_features = pd.read_csv('data/{}.csv'.format('processed_data_yearly'))
     # initialize a model
     if args.model == 'GTN' or args.model == 'LUCE':
         model = GTN(num_edge=len(A),
@@ -113,13 +113,13 @@ if __name__ == '__main__':
         # A month corresponds to a model model, and parameters are updated in the model of this month; cur_month represents the last month of the current training
          # r_gcnLSTMs starts training from the first month of data input each time, and gradually expands the model to the length of cur_month
          # According to update_len, when cur_month exceeds update_len, only update the parameters of [cur_month-update_len: cur_month] month each time
-        node_features = pd.read_csv('dataset/{}.csv'.format('processed_data'))
+        node_features = pd.read_csv('data/{}.csv'.format('processed_data_yearly'))
         if cur_month <= update_len:
             model_lstm_len = cur_month
-            node_features = node_features[node_features.month_year <= cur_month]
+            node_features = node_features[node_features.year <= cur_month]
         else:
             model_lstm_len = update_len
-            node_features = node_features[(node_features.month_year <= cur_month) & (node_features.month_year > cur_month-update_len)]
+            node_features = node_features[(node_features.year <= cur_month) & (node_features.year > cur_month-update_len)]
         node_features = node_features.values
         labels = np.expand_dims(node_features[:, -3], 1)
         node_features = node_features[:, :-3] + node_features[:, -1:]
@@ -136,6 +136,8 @@ if __name__ == '__main__':
         node_features = torch.from_numpy(node_features).type(torch.FloatTensor).to(device)
         train_node_features = node_features[nids[0]]
         valid_node_features = node_features[nids[1]]
+
+        print(train_node_features)
 
         
         # pre-training model parameter loading
@@ -155,7 +157,7 @@ if __name__ == '__main__':
 
         elif 1 < cur_month <= update_len:     # current month is within the update range
             #parameter inheritance
-            old_model = torch.load(config.result_path + 'model_saved/' + 'time' + str(cur_month - 1) + '.pkl')
+            old_model = torch.load(result_path + 'time' + str(cur_month - 1) + '.pkl')
             model_dict = model.state_dict()
             # all existing parameters are inherited, including LSTM and GCN of each month
             state_dict = {k: v for k, v in old_model.items() if k in model_dict.keys()}
@@ -195,7 +197,7 @@ if __name__ == '__main__':
         #model = nn.DataParallel(model)
         loss = nn.L1Loss()
         Ws = []
-        scaler = joblib.load(config.data_path + 'scaler.pkl')
+        scaler = joblib.load('./data/scaler_price.pkl')
         for epoch in range(epochs):
             # print('Epoch ',i)
             avg_train_loss = 0
@@ -205,7 +207,9 @@ if __name__ == '__main__':
             avg_valid_mse_error = 0
             avg_test_mse_error = 0
             model.train()
+            print("Training...")
             for batch in range(0, len(train_node_features), args.batch_size):
+                print("batch: ", batch, "/", len(train_node_features), "  ", end='\r')
                 batch_size = min(args.batch_size, len(train_node_features)-batch)
                 num_batches = len(train_node_features)//batch_size
                 optimizer.zero_grad()
@@ -221,6 +225,7 @@ if __name__ == '__main__':
                     loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size])
                 loss.backward()
                 optimizer.step()
+                print(loss.detach().cpu().numpy())
                 avg_train_loss += loss.detach().cpu().numpy() / num_batches
                 avg_train_mse_error += train_mse / num_batches
             print('Epoch: {}\n Train - Loss: {}\n Train - MSE: {}\n'.format(epoch, avg_train_loss, avg_train_mse_error))
@@ -245,6 +250,7 @@ if __name__ == '__main__':
                     y_target = y_target.detach().cpu().numpy()
                     y_valid = y_valid.detach().cpu().numpy()
 
+                    '''
                     padding = np.zeros((val_predict.shape[0], val_predict.shape[1], 338))
                     val_predict = np.concatenate((padding, val_predict), axis=2)
                     val_target = np.concatenate((padding, val_target), axis=2)
@@ -254,6 +260,9 @@ if __name__ == '__main__':
                         val_target[j] = scaler.inverse_transform(val_target[j])
                     val_predict = val_predict[:, :, -1]
                     val_target = val_target[:, :, -1]
+                    '''
+                    val_predict = scaler.inverse_transform(y_valid)
+                    val_target = scaler.inverse_transform(y_target)
                     # concatenate the val_pred and val_tar
                     if val_pred is None:
                         val_pred = val_predict
