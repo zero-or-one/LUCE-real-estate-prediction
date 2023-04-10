@@ -36,28 +36,18 @@ class PrelifelongConfig(DefaultConfig):
     def __init__(self, device):
         super().__init__(device)
         self.yearly = True # Wheither to use yearly data or monthly data
-        if self.yearly:
-            self.result_path = 'result_prelifelong_yearly/'
-            self.dataset = 'processed_data_yearly.csv'
-            self.model = 'r_gcn2lv_1LSTMs(config)'
-            self.pretrained_path = None
-            self.concat = False
-            self.seq_len = 17
-            self.update_len = 6
-            self.house_size = 184
-            self.layers = 1
-            self.lr = 1e-3
-            self.epoch = 10000
-        else:
-            self.result_path = 'result_prelifelong_monthly/'
-            self.dataset = 'processed_data_monthly.csv'
-            self.model = 'r_gcn2lv_1LSTMs(config)'
-            self.pretrained_path = None
-            self.concat = True
-            self.seq_len = 5*12
-            self.update_len = 1#2*12
-            self.house_size = 217
-            self.epoch = 15000
+        self.result_path = 'result_prelifelong_yearly/'
+        self.dataset = 'processed_data_yearly.csv'
+        self.model = 'r_gcn2lv_1LSTMs(config)'
+        self.pretrained_path = None
+        self.concat = False
+        self.seq_len = 12#17
+        self.update_len = 4#6
+        self.house_size = 1000#184
+        self.layers = 1
+        self.lr = 1e-3
+        self.epoch = 10000
+
         
 
 class GCNlstm_staticConfig(DefaultConfig):
