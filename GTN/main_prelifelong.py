@@ -13,6 +13,8 @@ import copy
 import pandas as pd
 #from sklearn.externals import joblib 
 import joblib
+import os
+
 
 if __name__ == '__main__':
     init_seed(seed=777)
@@ -31,7 +33,7 @@ if __name__ == '__main__':
                         help='learning rate')
     parser.add_argument('--lr_decay', type=int, default=0.1, help='learning rate decay')
     parser.add_argument('--lr_decay_step', type=int, default=1000, help='learning rate decay step')
-    parser.add_argument("--batch_size", type=int, default=128, help="batch size")
+    parser.add_argument("--batch_size", type=int, default=1024, help="batch size")
     parser.add_argument('--weight_decay', type=float, default=0.0001,
                         help='l2 reg')
     parser.add_argument('--num_layers', type=int, default=1,
@@ -79,14 +81,20 @@ if __name__ == '__main__':
         deg_inv_sqrt, deg_row, deg_col = _norm(edge_index.detach(), num_nodes, edge_value.detach())
         edge_value = deg_inv_sqrt[deg_row] * edge_value
 
-    seq_len = 5*12
-    update_len = 2*12
-    house_size = 217
+    seq_len = 17
+    update_len = 4
+    house_size = 184
+    result_path = './result/'
+    if not os.path.exists(result_path):
+        os.makedirs(result_path)
+    if not os.path.exists('predictions'):
+        os.makedirs('predictions')
 
     node_features = pd.read_csv('data/{}.csv'.format('processed_data_yearly'))
+
     # initialize a model
     if args.model == 'GTN' or args.model == 'LUCE':
-        model = GTN(num_edge=len(A),
+        model = GTN(num_edge=184,
                             num_channels=num_channels,
                             w_in = node_features.shape[1]-3,
                             w_out = node_dim,
@@ -108,12 +116,13 @@ if __name__ == '__main__':
             for layer in range(args.num_FastGTN_layers):
                 model.fastGTNs[layer].layers = pre_trained_fastGTNs[layer]
 
-
+    
     for cur_month in range(1, seq_len+1):
         # A month corresponds to a model model, and parameters are updated in the model of this month; cur_month represents the last month of the current training
          # r_gcnLSTMs starts training from the first month of data input each time, and gradually expands the model to the length of cur_month
          # According to update_len, when cur_month exceeds update_len, only update the parameters of [cur_month-update_len: cur_month] month each time
         node_features = pd.read_csv('data/{}.csv'.format('processed_data_yearly'))
+        node_features.year -= 2005
         if cur_month <= update_len:
             model_lstm_len = cur_month
             node_features = node_features[node_features.year <= cur_month]
@@ -134,11 +143,9 @@ if __name__ == '__main__':
 
         num_edge_type = len(A)
         node_features = torch.from_numpy(node_features).type(torch.FloatTensor).to(device)
+        
         train_node_features = node_features[nids[0]]
         valid_node_features = node_features[nids[1]]
-
-        print(train_node_features)
-
         
         # pre-training model parameter loading
         if cur_month == 1:
@@ -173,7 +180,7 @@ if __name__ == '__main__':
         
         elif cur_month > update_len:  #  current month is out of the update range
             # parameter inheritance
-            old_model = torch.load(config.result_path + 'model_saved/' + 'time' + str(cur_month - 1) + '.pkl')
+            old_model = torch.load(result_path + 'time' + str(cur_month - 1) + '.pkl')
             model_dict = model.state_dict()
             # all existing parameters are inherited, including LSTM and GCN of each month
             state_dict = {k: v for k, v in old_model.items() if k in model_dict.keys()}
@@ -187,7 +194,6 @@ if __name__ == '__main__':
             model.load_state_dict(model_dict)
             print('old model from previous time loaded!')
         
-
         optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
         gamma = args.lr_decay
         step_size = args.lr_decay_step
@@ -203,13 +209,14 @@ if __name__ == '__main__':
             avg_train_loss = 0
             avg_valid_loss = 0
             avg_test_loss = 0
+            avg_train_mape_error = 0
+            avg_valid_mape_error = 0
+            avg_test_mape_error = 0
             avg_train_mse_error = 0
             avg_valid_mse_error = 0
             avg_test_mse_error = 0
             model.train()
-            print("Training...")
             for batch in range(0, len(train_node_features), args.batch_size):
-                print("batch: ", batch, "/", len(train_node_features), "  ", end='\r')
                 batch_size = min(args.batch_size, len(train_node_features)-batch)
                 num_batches = len(train_node_features)//batch_size
                 optimizer.zero_grad()
@@ -217,18 +224,22 @@ if __name__ == '__main__':
                 a = []
                 for i in range(len(A)):
                     a.append((A[i][0][:, batch:batch+batch_size], A[i][1][batch:batch+batch_size]))
-                num_nodes = a[0][0].shape[1]
+                num_nodes = 184#a[0][0].shape[1]
                 #print(len(a), a[0][0].shape, a[0][1].shape)
                 if args.model == 'FastGTN':
-                    loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size], epoch=i)
+                    loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size], epoch=epoch)
                 else:
                     loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size])
                 loss.backward()
                 optimizer.step()
-                print(loss.detach().cpu().numpy())
                 avg_train_loss += loss.detach().cpu().numpy() / num_batches
                 avg_train_mse_error += train_mse / num_batches
-            print('Epoch: {}\n Train - Loss: {}\n Train - MSE: {}\n'.format(epoch, avg_train_loss, avg_train_mse_error))
+                # calculate MAPE score as well
+                mape = np.mean(np.abs((y_train.detach().cpu().numpy() - train_target[batch:batch+batch_size].detach().cpu().numpy()) / train_target[batch:batch+batch_size].detach().cpu().numpy()))
+                avg_train_mape_error += mape / num_batches
+
+
+            print('Epoch: {}\n Train - Loss: {}\n Train - MSE: {}\n Train - MAPE: {}\n'.format(epoch, avg_train_loss, avg_train_mse_error, avg_train_mape_error))
             scheduler.step()
             # validation
             model.eval()
@@ -245,7 +256,14 @@ if __name__ == '__main__':
                         val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size], epoch=epoch)
                     else:
                         val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size])
-                if epoch % 9999 == 0:
+                
+                avg_valid_loss += val_loss.detach().cpu().numpy() / num_batches
+                avg_valid_mse_error += val_mse / num_batches
+                # calculate MAPE score as well
+                mape = np.mean(np.abs((y_valid.detach().cpu().numpy() - valid_target[batch:batch+batch_size].detach().cpu().numpy()) / valid_target[batch:batch+batch_size].detach().cpu().numpy()))
+                avg_valid_mape_error += mape / num_batches
+                                
+                if epoch % (epochs-1) == 0:
                     y_target = valid_target[batch:batch+batch_size]
                     y_target = y_target.detach().cpu().numpy()
                     y_valid = y_valid.detach().cpu().numpy()
@@ -270,14 +288,12 @@ if __name__ == '__main__':
                     else:
                         val_pred = np.concatenate((val_pred, val_predict), axis=0)
                         val_tar = np.concatenate((val_tar, val_target), axis=0)
+
             if val_pred is not None:
-                np.save('./predictions/' + 'pred_time' + str(cur_month) + '_epoch' + str(i) + '.npy', val_pred)
-                np.save('./predictions/' + 'target_time' + str(cur_month) + '_epoch' + str(i) + '.npy', val_tar)
+                np.save('./predictions/' + 'pred_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_pred)
+                np.save('./predictions/' + 'target_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_tar)
                 del val_pred, val_tar
-                
-                avg_valid_loss += val_loss.detach().cpu().numpy() / num_batches
-                avg_valid_mse_error += val_mse / num_batches
-            print('Epoch: {}\n Valid - Loss: {}\n Valid - MSE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error))
+            
+            print('Epoch: {}\n Valid - Loss: {}\n Valid - MSE: {}\n Train - MAPE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error, avg_valid_mape_error))
         # save the model
-        result_path = './result/'
         torch.save(model.state_dict(), result_path + 'time' + str(cur_month) + '.pkl')
