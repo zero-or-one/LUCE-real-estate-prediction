@@ -68,14 +68,14 @@ if __name__ == '__main__':
     adj_matrix = np.load('data/{}.npy'.format("adjacency"))
     #print(adj_matrix.shape)
     # use subset for now
-    adj_matrix = adj_matrix[0,:10000, :10000]
+    adj_matrix = adj_matrix[:,:10000, :10000]
     edge_index = torch.from_numpy(np.vstack(adj_matrix.nonzero())).to(torch.long).to(device)
     # add target node
     edge_value = torch.from_numpy(adj_matrix[adj_matrix.nonzero()]).to(torch.float).to(device)
     #print(edge_index.shape, edge_value.shape)
     A.append((edge_index, edge_value))
 
-    num_nodes = adj_matrix.shape[0]
+    num_nodes = adj_matrix.shape[1]
     #exit()
     args.num_nodes = num_nodes
     # add self-loops and normalize if needed
@@ -83,9 +83,9 @@ if __name__ == '__main__':
         edge_index, edge_value = add_self_loops(edge_index, edge_attr=edge_value, fill_value=1e-20, num_nodes=num_nodes)
         deg_inv_sqrt, deg_row, deg_col = _norm(edge_index.detach(), num_nodes, edge_value.detach())
         edge_value = deg_inv_sqrt[deg_row] * edge_value
-    seq_len = 5
-    update_len = 2
-    house_size = 5000
+    seq_len = 1
+    update_len = 1
+    house_size = 10000
     result_path = './result/'
     if not os.path.exists(result_path):
         os.makedirs(result_path)
@@ -95,14 +95,22 @@ if __name__ == '__main__':
     node_features = np.load('data/{}.npy'.format("X_train"))
 
     # initialize a model
-    if args.model == 'GTN' or args.model == 'LUCE':
-        model = GTN(num_edge=5000,
+    if args.model == 'GTN':
+        model = GTN(num_edge=10000,
                             num_channels=num_channels,
                             w_in = node_features.shape[1],
                             w_out = node_dim,
                             num_layers=num_layers,
                             num_nodes=num_nodes,
-                            args=args)        
+                            args=args)    
+    if args.model == 'LUCE':
+        model = LUCE(num_edge=10000,
+                            num_channels=num_channels,
+                            w_in = node_features.shape[1],
+                            w_out = node_dim,
+                            num_layers=num_layers,
+                            num_nodes=args.batch_size,
+                            args=args)    
     elif args.model == 'FastGTN':
         if args.pre_train and l == 1:
             pre_trained_fastGTNs = []
@@ -214,7 +222,7 @@ if __name__ == '__main__':
                 a = []
                 for i in range(len(A)):
                     a.append((A[i][0][:, batch:batch+batch_size], A[i][1][batch:batch+batch_size]))
-                num_nodes = 184#a[0][0].shape[1]
+                num_nodes = batch_size#a[0][0].shape[1]
                 #print(len(a), a[0][0].shape, a[0][1].shape)
                 if args.model == 'FastGTN':
                     loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size], epoch=epoch)
@@ -230,6 +238,14 @@ if __name__ == '__main__':
 
 
             print('Epoch: {}\n Train - Loss: {}\n Train - MSE: {}\n Train - MAPE: {}\n'.format(epoch, avg_train_loss, avg_train_mse_error, avg_train_mape_error))
+            # write the training loss to the file
+            with open(result_path + 'train_loss.txt', 'a') as f:
+                f.write(str(avg_train_loss) + '\n')
+            with open(result_path + 'train_mse.txt', 'a') as f:
+                f.write(str(avg_train_mse_error) + '\n')
+            with open(result_path + 'train_mape.txt', 'a') as f:
+                f.write(str(avg_train_mape_error) + '\n')
+            
             scheduler.step()
             # validation
             model.eval()

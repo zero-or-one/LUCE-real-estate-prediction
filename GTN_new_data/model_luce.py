@@ -136,11 +136,17 @@ class LUCE(nn.Module):
             else:
                 X_tmp = F.relu(self.gcn(X,edge_index=edge_index.detach(), edge_weight=edge_weight))
                 X_ = torch.cat((X_,X_tmp), dim=1)
+        #print(X_.shape)
+        if X_.shape[0] != self.num_nodes:
+            # fill the missing nodes with zeros
+            X_ = torch.cat((X_, torch.zeros(self.num_nodes - X_.shape[0], X_.shape[1]).to(self.args.device)), dim=0)
         X_ = self.lstm(X_.view(self.num_nodes, 1, -1))[0].view(self.num_nodes, -1)
         y = self.linear(X_)
         y = self.LeakyReLU(y)
         #print(y.shape, target.shape)
         #exit()
+        # remove the missing nodes
+        y = y[:target.shape[0]]
         mse_error = MSE(y, target)
         if eval:
             return y
