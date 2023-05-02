@@ -33,7 +33,7 @@ def create_euc_adj(distance, id_list, sigma):
     the range of sigma is [0, 1]
     """
     adj = np.zeros((len(distance), len(distance)), dtype=np.float64)
-    p = np.exp(-distance**2 / (2 * sigma**2))
+    p = np.exp(-distance  * (sigma**2/2))
     # put the distance value for each id and id_list instance
     for i in range(len(distance)):
         adj[i, id_list] = p[i]
