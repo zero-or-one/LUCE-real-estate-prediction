@@ -289,6 +289,6 @@ if __name__ == '__main__':
                 np.save('./predictions/' + 'target_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_tar)
                 del val_pred, val_tar
             
-            print('Epoch: {}\n Valid - Loss: {}\n Valid - MSE: {}\n Train - MAPE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error, avg_valid_mape_error))
+            print('Epoch: {}\n Valid - Loss: {}\n Valid - MSE: {}\n Valid - MAPE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error, avg_valid_mape_error))
         # save the model
         torch.save(model.state_dict(), result_path + 'time' + str(cur_month) + '.pkl')
