@@ -19,6 +19,10 @@ def geo_adj(distance, id_list):
     # put the distance value for each id and id_list instance
     for i in range(len(distance)):
         adj[i, id_list] = distance[i]
+        # use only the first 10,000 samples
+        if i == 10000:
+            break
+    adj = adj[0:10000, 0:10000]
     # normalize the adjacency matrix
     adj = adj / adj.sum(axis=1, keepdims=True)
     return adj    
@@ -37,16 +41,20 @@ def create_euc_adj(distance, id_list, sigma):
     # put the distance value for each id and id_list instance
     for i in range(len(distance)):
         adj[i, id_list] = p[i]
+        # use only the first 10,000 samples
+        if i == 10000:
+            break
     # normalize the adjacency matrix
     #adj = adj / adj.sum(axis=1, keepdims=True)
     # let's avoid normalization
+    adj = adj[0:10000, 0:10000]
     return adj
 
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--data_path" , type=str, default='./data/data.npz')
+    parser.add_argument("--data_path" , type=str, default='./data/poa.npz')
     parser.add_argument("--create_adj", type=int, default=1)
     parser.add_argument("--sigma", type=float, default=0.4)
     args = parser.parse_args()
@@ -58,11 +66,11 @@ if __name__ == '__main__':
     X_test = data['X_test']
     y_train = data['y_train']
     y_test = data['y_test']
-    # leave 100000 samples only
-    X_train = X_train[:100000, :]
-    X_test = X_test[:100000, :]
-    y_train = y_train[:100000]
-    y_test = y_test[:100000]
+    # leave 10000 samples only
+    X_train = X_train[:10000, :]
+    X_test = X_test[:10000, :]
+    y_train = y_train[:10000]
+    y_test = y_test[:10000]
     print("The shape of X_train is {}".format(X_train.shape))
 
     if args.create_adj:
@@ -70,6 +78,20 @@ if __name__ == '__main__':
         id_list_geo = data['idx_geo']
         dist_eucli = data['dist_eucli']
         id_list_eucli = data['idx_eucli']
+        '''
+        # limit the number of samples
+        dist_geo = dist_geo[:10000, :]
+        id_list_geo = id_list_geo[:10000]
+        dist_eucli = dist_eucli[:10000, :]
+        id_list_eucli = id_list_eucli[:10000]
+        # remove the elements in id_list_geo that are not the first 10,000 samples
+        id_list_geo = [x for x in id_list_geo if x < 10000]
+        # remove the elements in id_list_eucli that are not the first 10,000 samples
+        id_list_eucli = [x for x in id_list_eucli if x < 10000]
+        # remove the same elements in list_geo and list_eucli
+        '''
+
+
 
         A_geo = geo_adj(dist_geo, id_list_geo)
         A_eucli = create_euc_adj(dist_eucli, id_list_eucli, args.sigma)

@@ -68,7 +68,7 @@ if __name__ == '__main__':
     adj_matrix = np.load('data/{}.npy'.format("adjacency"))
     #print(adj_matrix.shape)
     # use subset for now
-    adj_matrix = adj_matrix[:,:10000, :10000]
+    adj_matrix = adj_matrix[:, :10000, :10000]
     edge_index = torch.from_numpy(np.vstack(adj_matrix.nonzero())).to(torch.long).to(device)
     # add target node
     edge_value = torch.from_numpy(adj_matrix[adj_matrix.nonzero()]).to(torch.float).to(device)
@@ -89,9 +89,7 @@ if __name__ == '__main__':
     result_path = './result/'
     if not os.path.exists(result_path):
         os.makedirs(result_path)
-    if not os.path.exists('predictions'):
-        os.makedirs('predictions')
-
+    
     node_features = np.load('data/{}.npy'.format("X_train"))
 
     # initialize a model
@@ -128,14 +126,14 @@ if __name__ == '__main__':
 
 
     train_features = np.load('data/{}.npy'.format("X_train"))
-    train_features = train_features[:5000, :]
+    train_features = train_features
     valid_features = np.load('data/{}.npy'.format("X_test"))
-    valid_features = valid_features[:5000, :]
+    valid_features = valid_features
 
     train_labels = np.load('data/{}.npy'.format("y_train"))
     valid_labels = np.load('data/{}.npy'.format("y_test"))
-    train_labels = train_labels[:5000]
-    valid_labels = valid_labels[:5000]
+    train_labels = train_labels
+    valid_labels = valid_labels
 
     train_target = torch.from_numpy(train_labels).type(torch.FloatTensor).to(device)
     valid_target = torch.from_numpy(valid_labels).type(torch.FloatTensor).to(device)
@@ -285,10 +283,18 @@ if __name__ == '__main__':
                         val_tar = np.concatenate((val_tar, val_target), axis=0)
 
             if val_pred is not None:
-                np.save('./predictions/' + 'pred_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_pred)
-                np.save('./predictions/' + 'target_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_tar)
+                np.save(result_path + 'pred_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_pred)
+                np.save(result_path + 'target_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_tar)
                 del val_pred, val_tar
             
             print('Epoch: {}\n Valid - Loss: {}\n Valid - MSE: {}\n Valid - MAPE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error, avg_valid_mape_error))
+            # log the validation loss
+            with open(result_path + 'valid_loss.txt', 'a') as f:
+                f.write(str(avg_valid_loss) + '\n')
+            with open(result_path + 'valid_mse.txt', 'a') as f:
+                f.write(str(avg_valid_mse_error) + '\n')
+            with open(result_path + 'valid_mape.txt', 'a') as f:
+                f.write(str(avg_valid_mape_error) + '\n')
+                
         # save the model
         torch.save(model.state_dict(), result_path + 'time' + str(cur_month) + '.pkl')
