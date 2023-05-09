@@ -68,10 +68,10 @@ if __name__ == '__main__':
     adj_matrix = np.load('data/{}.npy'.format("adjacency"))
     #print(adj_matrix.shape)
     # use subset for now
-    adj_matrix = adj_matrix[:, :10000, :10000]
-    edge_index = torch.from_numpy(np.vstack(adj_matrix.nonzero())).to(torch.long).to(device)
+    adj_matrix = adj_matrix
+    edge_index = torch.from_numpy(np.vstack(adj_matrix.nonzero())).to(torch.long)
     # add target node
-    edge_value = torch.from_numpy(adj_matrix[adj_matrix.nonzero()]).to(torch.float).to(device)
+    edge_value = torch.from_numpy(adj_matrix[adj_matrix.nonzero()]).to(torch.float)
     #print(edge_index.shape, edge_value.shape)
     A.append((edge_index, edge_value))
 
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         edge_value = deg_inv_sqrt[deg_row] * edge_value
     seq_len = 1
     update_len = 1
-    house_size = 10000
+    house_size = num_nodes
     result_path = './result/'
     if not os.path.exists(result_path):
         os.makedirs(result_path)
@@ -219,7 +219,7 @@ if __name__ == '__main__':
                 # take a batch of adjecency matrix
                 a = []
                 for i in range(len(A)):
-                    a.append((A[i][0][:, batch:batch+batch_size], A[i][1][batch:batch+batch_size]))
+                    a.append((A[i][0][:, batch:batch+batch_size].to(device), A[i][1][batch:batch+batch_size].to(device)))
                 num_nodes = batch_size#a[0][0].shape[1]
                 #print(len(a), a[0][0].shape, a[0][1].shape)
                 if args.model == 'FastGTN':
@@ -254,7 +254,7 @@ if __name__ == '__main__':
                 # take a batch of adjecency matrix
                 a = []
                 for i in range(len(A)):
-                    a.append((A[i][0][:, batch:batch+batch_size], A[i][1][batch:batch+batch_size]))
+                    a.append((A[i][0][:, len(train_node_features)+batch:len(train_node_features)+batch+batch_size].to(device), A[i][1][len(train_node_features)+batch:len(train_node_features)+batch+batch_size].to(device)))
                 with torch.no_grad():
                     if args.model == 'FastGTN':
                         val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size], epoch=epoch)
@@ -271,7 +271,8 @@ if __name__ == '__main__':
                     y_target = valid_target[batch:batch+batch_size]
                     y_target = y_target.detach().cpu().numpy()
                     y_valid = y_valid.detach().cpu().numpy()
-
+                    
+                    #print(y_valid.shape, y_target.shape)
                     val_predict = scaler.inverse_transform(y_valid)
                     val_target = scaler.inverse_transform(y_target)
                     # concatenate the val_pred and val_tar

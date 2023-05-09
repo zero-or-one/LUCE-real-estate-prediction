@@ -58,12 +58,15 @@ if __name__ == '__main__':
     X_test = data['X_test']
     y_train = data['y_train']
     y_test = data['y_test']
+    '''
     # leave 100000 samples only
     X_train = X_train[:100000, :]
     X_test = X_test[:100000, :]
     y_train = y_train[:100000]
     y_test = y_test[:100000]
+    '''
     print("The shape of X_train is {}".format(X_train.shape))
+    print("The shape of X_test is {}".format(X_test.shape))
 
     if args.create_adj:
         dist_geo = data['dist_geo']
