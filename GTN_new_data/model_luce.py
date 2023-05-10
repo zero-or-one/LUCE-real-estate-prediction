@@ -87,7 +87,7 @@ class LUCE(nn.Module):
             else:
                 layers.append(GTLayer(num_edge, num_channels, num_nodes, first=False))
         self.glstm = nn.ModuleList(layers)
-        self.loss = nn.L1Loss()
+        self.loss = nn.MSELoss()
         self.gcn = GCNConv(in_channels=self.w_in, out_channels=w_out, args=args)
         self.lstm = nn.LSTM(input_size=self.w_out*self.num_channels, hidden_size=self.hidden_dim, num_layers=lstm_layers)
         # self.linear_gcn = nn.Linear(hidden_dim, gcn_input_dim)  # 暂时输入输入维度一致，后续可再调整
@@ -148,6 +148,7 @@ class LUCE(nn.Module):
         # remove the missing nodes
         y = y[:target.shape[0]]
         mse_error = MSE(y, target)
+        
         if eval:
             return y
         loss = self.loss(y, target)

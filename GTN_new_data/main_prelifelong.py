@@ -23,7 +23,7 @@ if __name__ == '__main__':
                         help='Model')
     parser.add_argument('--dataset', type=str,
                         help='Dataset', default='REALESTATE')
-    parser.add_argument('--epoch', type=int, default=10000,
+    parser.add_argument('--epoch', type=int, default=3000,
                         help='Training Epochs')
     parser.add_argument('--node_dim', type=int, default=64,
                         help='hidden dimensions')
@@ -94,7 +94,7 @@ if __name__ == '__main__':
 
     # initialize a model
     if args.model == 'GTN':
-        model = GTN(num_edge=10000,
+        model = GTN(num_edge=2*num_nodes,
                             num_channels=num_channels,
                             w_in = node_features.shape[1],
                             w_out = node_dim,
@@ -102,7 +102,7 @@ if __name__ == '__main__':
                             num_nodes=num_nodes,
                             args=args)    
     if args.model == 'LUCE':
-        model = LUCE(num_edge=10000,
+        model = LUCE(num_edge=2*num_nodes,
                             num_channels=num_channels,
                             w_in = node_features.shape[1],
                             w_out = node_dim,
@@ -123,7 +123,6 @@ if __name__ == '__main__':
         if args.pre_train and l > 0:
             for layer in range(args.num_FastGTN_layers):
                 model.fastGTNs[layer].layers = pre_trained_fastGTNs[layer]
-
 
     train_features = np.load('data/{}.npy'.format("X_train"))
     train_features = train_features
@@ -197,7 +196,7 @@ if __name__ == '__main__':
 
         model.to(device)
         #model = nn.DataParallel(model)
-        loss = nn.L1Loss()
+        calc_loss = nn.MSELoss()#nn.L1Loss()
         Ws = []
         scaler = joblib.load('./data/scaler_price.pkl')
         for epoch in range(epochs):
@@ -228,18 +227,26 @@ if __name__ == '__main__':
                     loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size])
                 loss.backward()
                 optimizer.step()
+                y_transform = scaler.inverse_transform(y_train.detach().cpu().numpy().reshape(-1,1))
+                y_origin = scaler.inverse_transform(train_target[batch:batch+batch_size].detach().cpu().numpy().reshape(-1,1))
+                mape = np.mean(np.abs((y_transform - y_origin) / y_origin))*100
+                # make them tensors
+                y_transform = torch.from_numpy(y_transform).to(device)
+                y_origin = torch.from_numpy(y_origin).to(device)
+                # calculate the mse loss using the original data
+                loss = calc_loss(y_transform, y_origin)
+                rmse_error = np.sqrt(loss.detach().cpu().numpy())
                 avg_train_loss += loss.detach().cpu().numpy() / num_batches
-                avg_train_mse_error += train_mse / num_batches
+                avg_train_mse_error += rmse_error / num_batches
                 # calculate MAPE score as well
-                mape = np.mean(np.abs((y_train.detach().cpu().numpy() - train_target[batch:batch+batch_size].detach().cpu().numpy()) / train_target[batch:batch+batch_size].detach().cpu().numpy()))
+                #mape = np.mean(np.abs((y_train.detach().cpu().numpy() - train_target[batch:batch+batch_size].detach().cpu().numpy()) / train_target[batch:batch+batch_size].detach().cpu().numpy()))*100
                 avg_train_mape_error += mape / num_batches
-
-
-            print('Epoch: {}\n Train - Loss: {}\n Train - MSE: {}\n Train - MAPE: {}\n'.format(epoch, avg_train_loss, avg_train_mse_error, avg_train_mape_error))
+            
+            print('Epoch: {}\n Train - Loss: {}\n Train - RMSE: {}\n Train - MAPE: {}\n'.format(epoch, avg_train_loss, avg_train_mse_error, avg_train_mape_error))
             # write the training loss to the file
             with open(result_path + 'train_loss.txt', 'a') as f:
                 f.write(str(avg_train_loss) + '\n')
-            with open(result_path + 'train_mse.txt', 'a') as f:
+            with open(result_path + 'train_rmse.txt', 'a') as f:
                 f.write(str(avg_train_mse_error) + '\n')
             with open(result_path + 'train_mape.txt', 'a') as f:
                 f.write(str(avg_train_mape_error) + '\n')
@@ -260,11 +267,19 @@ if __name__ == '__main__':
                         val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size], epoch=epoch)
                     else:
                         val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size])
+                y_transform = scaler.inverse_transform(y_valid.detach().cpu().numpy().reshape(-1,1))
+                y_origin = scaler.inverse_transform(valid_target[batch:batch+batch_size].detach().cpu().numpy().reshape(-1,1))
+                mape = np.mean(np.abs((y_transform - y_origin) / y_origin))*100
                 
+                y_transform = torch.from_numpy(y_transform).to(device)
+                y_origin = torch.from_numpy(y_origin).to(device)
+                val_loss = calc_loss(y_origin, y_transform)
+                val_rmse_error = np.sqrt(val_loss.detach().cpu().numpy())
                 avg_valid_loss += val_loss.detach().cpu().numpy() / num_batches
-                avg_valid_mse_error += val_mse / num_batches
+                avg_valid_mse_error += val_rmse_error / num_batches
                 # calculate MAPE score as well
-                mape = np.mean(np.abs((y_valid.detach().cpu().numpy() - valid_target[batch:batch+batch_size].detach().cpu().numpy()) / valid_target[batch:batch+batch_size].detach().cpu().numpy()))
+                #mape = np.mean(np.abs((y_valid.detach().cpu().numpy() - valid_target[batch:batch+batch_size].detach().cpu().numpy()) / valid_target[batch:batch+batch_size].detach().cpu().numpy()))*100
+                
                 avg_valid_mape_error += mape / num_batches
                                 
                 if epoch % (epochs-1) == 0:
@@ -288,11 +303,11 @@ if __name__ == '__main__':
                 np.save(result_path + 'target_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_tar)
                 del val_pred, val_tar
             
-            print('Epoch: {}\n Valid - Loss: {}\n Valid - MSE: {}\n Valid - MAPE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error, avg_valid_mape_error))
+            print('Epoch: {}\n Valid - Loss: {}\n Valid - RMSE: {}\n Valid - MAPE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error, avg_valid_mape_error))
             # log the validation loss
             with open(result_path + 'valid_loss.txt', 'a') as f:
                 f.write(str(avg_valid_loss) + '\n')
-            with open(result_path + 'valid_mse.txt', 'a') as f:
+            with open(result_path + 'valid_rmse.txt', 'a') as f:
                 f.write(str(avg_valid_mse_error) + '\n')
             with open(result_path + 'valid_mape.txt', 'a') as f:
                 f.write(str(avg_valid_mape_error) + '\n')
