@@ -14,14 +14,21 @@ import hashlib
 import pandas as pd
 
 class RealEstateDGL(torch.utils.data.Dataset):
-    def __init__(self, data_dir, adjacency_names, df):
+    def __init__(self, data_dir, adjacency_names, X, y, train=True):
         """For now, we only support the full dataset as training data."""
         self.data_dir = data_dir
         self.dataset_name = 'RealEstate'
-        self.df = df
-        self.labels = self.df['price'].to_numpy()
-        self.df = self.df.drop(['price', 'house'], axis=1).to_numpy()
-
+        self.labels = y
+        self.df = X
+        self.train = train
+        # limit the number of samples to 5000
+        if self.train:
+            self.df = self.df[:5000]
+            self.labels = self.labels[:5000]
+        else:
+            self.df = self.df[-5000:]
+            self.labels = self.labels[-5000:]
+        self.number_of_nodes = self.df.shape[0]
         # check if saved graph exists
         if os.path.exists(os.path.join(data_dir, 'graph.bin')):
             self.graph, _ = load_graphs(os.path.join(data_dir, 'graph.bin'))
@@ -98,8 +105,13 @@ class RealEstateDGL(torch.utils.data.Dataset):
             self.graph_list.append(subg)
             '''
         self.graph_list = []
-        name = adjacency_names[0]
+        name = 'adjacency.npy'
         A = np.load(os.path.join(self.data_dir, name))
+        A = A[0]
+        if self.train:
+            A = A[:self.df.shape[0], :self.df.shape[0]]
+        else:
+            A = A[-self.df.shape[0]:, -self.df.shape[0]:]
         limit = node_features.shape[0]
         A = A[:limit, :limit]
         self.number_of_nodes = A.shape[0]

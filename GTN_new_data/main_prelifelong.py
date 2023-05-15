@@ -4,6 +4,7 @@ import torch.nn as nn
 from model_gtn import GTN
 from model_fastgtn import FastGTNs
 from model_luce import LUCE
+from model_gtn2 import GTN_GAT
 import pickle
 import argparse
 from torch_geometric.utils import add_self_loops
@@ -101,7 +102,7 @@ if __name__ == '__main__':
                             num_layers=num_layers,
                             num_nodes=num_nodes,
                             args=args)    
-    if args.model == 'LUCE':
+    elif args.model == 'LUCE':
         model = LUCE(num_edge=2*num_nodes,
                             num_channels=num_channels,
                             w_in = node_features.shape[1],
@@ -109,6 +110,14 @@ if __name__ == '__main__':
                             num_layers=num_layers,
                             num_nodes=args.batch_size,
                             args=args)    
+    elif args.model == 'GTN_GAT':
+        model = GTN_GAT(num_edge=2*num_nodes,
+                            num_channels=num_channels,
+                            w_in = node_features.shape[1],
+                            w_out = node_dim,
+                            num_layers=num_layers,
+                            num_nodes=args.batch_size,
+                            args=args)         
     elif args.model == 'FastGTN':
         if args.pre_train and l == 1:
             pre_trained_fastGTNs = []

@@ -1,0 +1,57 @@
+{
+    "gpu": {
+        "use": true,
+        "id": 0
+    },
+    
+    "model": "GTPrelifelong",
+    "data_dir": "dataset",
+    "dataset": "processed_data.csv",
+    "adjacency_list": ["adjacency_house.npy", "adjacency_geo.npy"],
+    
+    "result_path": "./result/",
+    
+    "params": {
+        "seed": 41,
+        "epochs": 1000,
+        "batch_size": 128,
+        "init_lr": 0.001,
+        "lr_reduce_factor": 0.7,
+        "lr_schedule_patience": 60,
+        "min_lr": 1e-10,
+        "weight_decay": 0.0,
+        "print_epoch_interval": 5,
+        "max_time": 24,
+        "dataset_ratio": 0.9
+    },
+    
+    "net_params": {
+        "L": 10,
+        "n_heads": 8,
+        "hidden_dim": 64,
+        "out_dim": 64,
+        "edge_feat": true,
+        "residual": true,
+        "readout": "mean",
+        "in_feat_dropout": 0.0,
+        "dropout": 0.0,
+        "layer_norm": true,
+        "batch_norm": false,
+        "self_loop": false,
+        "lap_pos_enc": false,
+        "wl_pos_enc": false,
+        "full_graph": false,
+        "e_dim": 1,
+        "h_dim": 339,
+        "pos_enc_dim": 16,
+        "month_len": 17,
+        "feature_size": 64,
+        "num_layers": 1,
+        "house_size": 184,
+        "seq_len": 60,
+        "update_len": 24,
+        "data_dir": "dataset",
+        "dataset": "processed_data.csv",
+        "adjacency_list": ["adjacency_house.npy", "adjacency_geo.npy"]
+    }
+}
