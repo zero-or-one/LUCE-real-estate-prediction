@@ -24,17 +24,17 @@ if __name__ == '__main__':
                         help='Model')
     parser.add_argument('--dataset', type=str,
                         help='Dataset', default='REALESTATE')
-    parser.add_argument('--epoch', type=int, default=3000,
+    parser.add_argument('--epoch', type=int, default=10000,
                         help='Training Epochs')
-    parser.add_argument('--node_dim', type=int, default=64,
+    parser.add_argument('--node_dim', type=int, default=256,
                         help='hidden dimensions')
-    parser.add_argument('--num_channels', type=int, default=2,
+    parser.add_argument('--num_channels', type=int, default=25,
                         help='number of channels')
-    parser.add_argument('--lr', type=float, default=0.001,
+    parser.add_argument('--lr', type=float, default=0.0001,
                         help='learning rate')
     parser.add_argument('--lr_decay', type=int, default=0.1, help='learning rate decay')
     parser.add_argument('--lr_decay_step', type=int, default=1000, help='learning rate decay step')
-    parser.add_argument("--batch_size", type=int, default=1024, help="batch size")
+    parser.add_argument("--batch_size", type=int, default=64, help="batch size")
     parser.add_argument('--weight_decay', type=float, default=0.0001,
                         help='l2 reg')
     parser.add_argument('--num_layers', type=int, default=1,
@@ -66,16 +66,22 @@ if __name__ == '__main__':
     num_layers = args.num_layers
 
     A = []
-    adj_matrix = np.load('data/{}.npy'.format("adjacency"))
-    #print(adj_matrix.shape)
-    # use subset for now
-    adj_matrix = adj_matrix
-    edge_index = torch.from_numpy(np.vstack(adj_matrix.nonzero())).to(torch.long)
-    # add target node
-    edge_value = torch.from_numpy(adj_matrix[adj_matrix.nonzero()]).to(torch.float)
-    #print(edge_index.shape, edge_value.shape)
-    A.append((edge_index, edge_value))
+    adj_matrix1 = np.load('data/{}.npy'.format("adjacency"))[:0]
+    adj_matrix = np.load('data/{}.npy'.format("adjacency_luce"))
 
+    #print(adj_matrix1.shape, adj_matrix2.shape)
+    adj_matrix = np.expand_dims(adj_matrix, axis=0)
+    adj_matrix = adj_matrix[:,:adj_matrix1.shape[1],:adj_matrix1.shape[2]]
+    # concatenate two adjacency matrix
+    adj_matrix = np.concatenate((adj_matrix, adj_matrix1), axis=0)
+    '''
+    edge_index = torch.from_numpy(np.vstack(adj_matrix.nonzero())).to(torch.long)
+    # get edge value from edge_index
+    edge_value = torch.from_numpy(adj_matrix[adj_matrix.nonzero()]).to(torch.float32)
+    #print(adj_matrix.shape, edge_index.shape, edge_value.shape, len(A))
+    #exit()
+    '''
+    
     num_nodes = adj_matrix.shape[1]
     #exit()
     args.num_nodes = num_nodes
@@ -123,8 +129,8 @@ if __name__ == '__main__':
             pre_trained_fastGTNs = []
             for layer in range(args.num_FastGTN_layers):
                 pre_trained_fastGTNs.append(copy.deepcopy(model.fastGTNs[layer].layers))
-        while len(A) > num_edge_type:
-            del A[-1]
+        #while len(A) > num_edge_type:
+        #    del A[-1]
         model = FastGTNs(num_edge_type=len(A),
                         w_in = node_features.shape[1],
                         num_nodes = args.batch_size,
@@ -146,7 +152,6 @@ if __name__ == '__main__':
     train_target = torch.from_numpy(train_labels).type(torch.FloatTensor).to(device)
     valid_target = torch.from_numpy(valid_labels).type(torch.FloatTensor).to(device)
 
-    num_edge_type = len(A)
     train_node_features = torch.from_numpy(train_features).type(torch.FloatTensor).to(device)
     valid_node_features = torch.from_numpy(valid_features).type(torch.FloatTensor).to(device)
 
@@ -219,17 +224,42 @@ if __name__ == '__main__':
             avg_train_mse_error = 0
             avg_valid_mse_error = 0
             avg_test_mse_error = 0
+            avg_train_mae_error = 0
+            avg_valid_mae_error = 0
             model.train()
             for batch in range(0, len(train_node_features), args.batch_size):
                 batch_size = min(args.batch_size, len(train_node_features)-batch)
                 num_batches = len(train_node_features)//batch_size
                 optimizer.zero_grad()
+                
+                '''
                 # take a batch of adjecency matrix
                 a = []
+                start = batch
+                end = min((batch+batch_size), A[0][0].shape[1]) 
                 for i in range(len(A)):
-                    a.append((A[i][0][:, batch:batch+batch_size].to(device), A[i][1][batch:batch+batch_size].to(device)))
-                num_nodes = batch_size#a[0][0].shape[1]
+                    a.append((A[i][0][:, start:end].to(device), A[i][1][start:end].to(device)))
+                num_nodes = a[0][0].shape[1]
                 #print(len(a), a[0][0].shape, a[0][1].shape)
+                '''
+                #for i in range(len(adj_matrix)):
+                A = adj_matrix[:,batch:batch+batch_size,batch:batch+batch_size]
+                a = []
+                edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
+                edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
+                #print(edge_index.shape, edge_weight.shape)
+                a.append((edge_index.to(device), edge_weight.to(device)))
+                
+                '''
+                # cut the edge_index and edge_weight into batches
+                for i in range(0, edge_index.shape[1], batch_size):
+                    a.append((edge_index[:,i:i+batch_size].to(device), edge_weight[i:i+batch_size].to(device)))
+                    break
+                '''
+                
+                #a.append((edge_index.to(device), edge_weight.to(device)))
+                
+                
                 if args.model == 'FastGTN':
                     loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size], epoch=epoch)
                 else:
@@ -239,19 +269,22 @@ if __name__ == '__main__':
                 y_transform = scaler.inverse_transform(y_train.detach().cpu().numpy().reshape(-1,1))
                 y_origin = scaler.inverse_transform(train_target[batch:batch+batch_size].detach().cpu().numpy().reshape(-1,1))
                 mape = np.mean(np.abs((y_transform - y_origin) / y_origin))*100
+                mae_error = np.mean(np.abs(y_transform - y_origin))
                 # make them tensors
                 y_transform = torch.from_numpy(y_transform).to(device)
                 y_origin = torch.from_numpy(y_origin).to(device)
                 # calculate the mse loss using the original data
                 loss = calc_loss(y_transform, y_origin)
                 rmse_error = np.sqrt(loss.detach().cpu().numpy())
+                
                 avg_train_loss += loss.detach().cpu().numpy() / num_batches
                 avg_train_mse_error += rmse_error / num_batches
+                avg_train_mae_error += mae_error / num_batches
                 # calculate MAPE score as well
                 #mape = np.mean(np.abs((y_train.detach().cpu().numpy() - train_target[batch:batch+batch_size].detach().cpu().numpy()) / train_target[batch:batch+batch_size].detach().cpu().numpy()))*100
                 avg_train_mape_error += mape / num_batches
             
-            print('Epoch: {}\n Train - Loss: {}\n Train - RMSE: {}\n Train - MAPE: {}\n'.format(epoch, avg_train_loss, avg_train_mse_error, avg_train_mape_error))
+            print('Epoch: {}\n Train - Loss: {}\n Train - RMSE: {}\n Train - MAE: {}\n Train - MAPE: {}\n'.format(epoch, avg_train_loss, avg_train_mse_error, avg_train_mae_error, avg_train_mape_error))
             # write the training loss to the file
             with open(result_path + 'train_loss.txt', 'a') as f:
                 f.write(str(avg_train_loss) + '\n')
@@ -259,6 +292,8 @@ if __name__ == '__main__':
                 f.write(str(avg_train_mse_error) + '\n')
             with open(result_path + 'train_mape.txt', 'a') as f:
                 f.write(str(avg_train_mape_error) + '\n')
+            with open(result_path + 'train_mae.txt', 'a') as f:
+                f.write(str(avg_train_mae_error) + '\n')
             
             scheduler.step()
             # validation
@@ -268,9 +303,25 @@ if __name__ == '__main__':
                 batch_size = min(args.batch_size, len(valid_node_features)-batch)
                 num_batches = len(valid_node_features)//batch_size
                 # take a batch of adjecency matrix
+                '''
                 a = []
+                start = (len(train_node_features)+batch)
+                end = min((len(train_node_features)+batch+batch_size), A[0][0].shape[1]) 
                 for i in range(len(A)):
-                    a.append((A[i][0][:, len(train_node_features)+batch:len(train_node_features)+batch+batch_size].to(device), A[i][1][len(train_node_features)+batch:len(train_node_features)+batch+batch_size].to(device)))
+                    a.append((A[i][0][:, start:end].to(device), A[i][1][start:end].to(device)))
+                '''
+                A = adj_matrix[:,len(train_node_features)+batch:len(train_node_features)+batch+batch_size,len(train_node_features)+batch:len(train_node_features)+batch+batch_size]
+                a = []
+                edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
+                edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
+                a.append((edge_index.to(device), edge_weight.to(device)))
+                '''
+                # cut the edge_index and edge_weight into batches
+                for i in range(0, edge_index.shape[1], batch_size):
+                    a.append((edge_index[:,i:i+batch_size].to(device), edge_weight[i:i+batch_size].to(device)))
+                    break
+                '''
+
                 with torch.no_grad():
                     if args.model == 'FastGTN':
                         val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size], epoch=epoch)
@@ -279,6 +330,7 @@ if __name__ == '__main__':
                 y_transform = scaler.inverse_transform(y_valid.detach().cpu().numpy().reshape(-1,1))
                 y_origin = scaler.inverse_transform(valid_target[batch:batch+batch_size].detach().cpu().numpy().reshape(-1,1))
                 mape = np.mean(np.abs((y_transform - y_origin) / y_origin))*100
+                mae_error = np.mean(np.abs(y_transform - y_origin))
                 
                 y_transform = torch.from_numpy(y_transform).to(device)
                 y_origin = torch.from_numpy(y_origin).to(device)
@@ -286,6 +338,7 @@ if __name__ == '__main__':
                 val_rmse_error = np.sqrt(val_loss.detach().cpu().numpy())
                 avg_valid_loss += val_loss.detach().cpu().numpy() / num_batches
                 avg_valid_mse_error += val_rmse_error / num_batches
+                avg_valid_mae_error += mae_error / num_batches
                 # calculate MAPE score as well
                 #mape = np.mean(np.abs((y_valid.detach().cpu().numpy() - valid_target[batch:batch+batch_size].detach().cpu().numpy()) / valid_target[batch:batch+batch_size].detach().cpu().numpy()))*100
                 
@@ -312,7 +365,7 @@ if __name__ == '__main__':
                 np.save(result_path + 'target_time' + str(cur_month) + '_epoch' + str(epoch) + '.npy', val_tar)
                 del val_pred, val_tar
             
-            print('Epoch: {}\n Valid - Loss: {}\n Valid - RMSE: {}\n Valid - MAPE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error, avg_valid_mape_error))
+            print('Epoch: {}\n Valid - Loss: {}\n Valid - RMSE: {}\n Valid - MAE: {}\n Valid - MAPE: {}\n'.format(epoch, avg_valid_loss, avg_valid_mse_error, avg_valid_mae_error, avg_valid_mape_error))
             # log the validation loss
             with open(result_path + 'valid_loss.txt', 'a') as f:
                 f.write(str(avg_valid_loss) + '\n')
@@ -320,6 +373,8 @@ if __name__ == '__main__':
                 f.write(str(avg_valid_mse_error) + '\n')
             with open(result_path + 'valid_mape.txt', 'a') as f:
                 f.write(str(avg_valid_mape_error) + '\n')
+            with open(result_path + 'valid_mae.txt', 'a') as f:
+                f.write(str(avg_valid_mae_error) + '\n')
                 
         # save the model
         torch.save(model.state_dict(), result_path + 'time' + str(cur_month) + '.pkl')
