@@ -1,7 +1,7 @@
 import torch
 import numpy as np
 import torch.nn as nn
-from model_gtn import GTN
+from model_gtn import GTN, GCN
 from model_fastgtn import FastGTNs
 from model_luce import LUCE
 from model_gtn2 import GTN_GAT
@@ -24,18 +24,18 @@ if __name__ == '__main__':
                         help='Model')
     parser.add_argument('--dataset', type=str,
                         help='Dataset', default='REALESTATE')
-    parser.add_argument('--epoch', type=int, default=10000,
+    parser.add_argument('--epoch', type=int, default=3000,
                         help='Training Epochs')
-    parser.add_argument('--node_dim', type=int, default=256,
+    parser.add_argument('--node_dim', type=int, default=64,
                         help='hidden dimensions')
-    parser.add_argument('--num_channels', type=int, default=25,
+    parser.add_argument('--num_channels', type=int, default=2,
                         help='number of channels')
-    parser.add_argument('--lr', type=float, default=0.0001,
+    parser.add_argument('--lr', type=float, default=0.001,
                         help='learning rate')
     parser.add_argument('--lr_decay', type=int, default=0.1, help='learning rate decay')
     parser.add_argument('--lr_decay_step', type=int, default=1000, help='learning rate decay step')
-    parser.add_argument("--batch_size", type=int, default=64, help="batch size")
-    parser.add_argument('--weight_decay', type=float, default=0.0001,
+    parser.add_argument("--batch_size", type=int, default=128, help="batch size")
+    parser.add_argument('--weight_decay', type=float, default=0.0005,
                         help='l2 reg')
     parser.add_argument('--num_layers', type=int, default=1,
                         help='number of GT/FastGT layers')
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     num_layers = args.num_layers
 
     A = []
-    adj_matrix1 = np.load('data/{}.npy'.format("adjacency"))[:0]
+    adj_matrix1 = np.load('data/{}.npy'.format("adjacency"))#[:1]
     adj_matrix = np.load('data/{}.npy'.format("adjacency_luce"))
 
     #print(adj_matrix1.shape, adj_matrix2.shape)
@@ -81,7 +81,6 @@ if __name__ == '__main__':
     #print(adj_matrix.shape, edge_index.shape, edge_value.shape, len(A))
     #exit()
     '''
-    
     num_nodes = adj_matrix.shape[1]
     #exit()
     args.num_nodes = num_nodes
@@ -124,6 +123,12 @@ if __name__ == '__main__':
                             num_layers=num_layers,
                             num_nodes=args.batch_size,
                             args=args)         
+    elif args.model == 'GCN':
+        model = GCN(in_channels=18,
+                            out_channels=16,
+                            num_nodes=args.batch_size,
+                            args=args)
+
     elif args.model == 'FastGTN':
         if args.pre_train and l == 1:
             pre_trained_fastGTNs = []
@@ -242,14 +247,13 @@ if __name__ == '__main__':
                 num_nodes = a[0][0].shape[1]
                 #print(len(a), a[0][0].shape, a[0][1].shape)
                 '''
-                #for i in range(len(adj_matrix)):
-                A = adj_matrix[:,batch:batch+batch_size,batch:batch+batch_size]
                 a = []
-                edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
-                edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
-                #print(edge_index.shape, edge_weight.shape)
-                a.append((edge_index.to(device), edge_weight.to(device)))
-                
+                for i in range(len(adj_matrix)):
+                    A = adj_matrix[i,batch:batch+batch_size,batch:batch+batch_size]
+                    edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
+                    edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
+                    #print(edge_index.shape, edge_weight.shape)
+                    a.append((edge_index.to(device), edge_weight.to(device)))           
                 '''
                 # cut the edge_index and edge_weight into batches
                 for i in range(0, edge_index.shape[1], batch_size):
@@ -310,11 +314,12 @@ if __name__ == '__main__':
                 for i in range(len(A)):
                     a.append((A[i][0][:, start:end].to(device), A[i][1][start:end].to(device)))
                 '''
-                A = adj_matrix[:,len(train_node_features)+batch:len(train_node_features)+batch+batch_size,len(train_node_features)+batch:len(train_node_features)+batch+batch_size]
                 a = []
-                edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
-                edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
-                a.append((edge_index.to(device), edge_weight.to(device)))
+                for i in range(len(adj_matrix)):
+                    A = adj_matrix[i,len(train_node_features)+batch:len(train_node_features)+batch+batch_size,len(train_node_features)+batch:len(train_node_features)+batch+batch_size]
+                    edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
+                    edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
+                    a.append((edge_index.to(device), edge_weight.to(device)))
                 '''
                 # cut the edge_index and edge_weight into batches
                 for i in range(0, edge_index.shape[1], batch_size):

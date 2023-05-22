@@ -8,6 +8,46 @@ from torch_scatter import scatter_add
 import torch_sparse
 from utils import MSE
 
+
+class GCN(nn.Module):
+    """Simple GCN layer implementation."""
+    def __init__(self, in_channels, out_channels, num_nodes, args=None):
+        super(GCN, self).__init__()
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.num_nodes = num_nodes
+        self.args = args
+        self.linear = nn.Linear(3*out_channels, 1)
+        self.gcn = GCNConv(in_channels=in_channels, out_channels=out_channels, args=args)
+        self.relu = nn.ReLU()
+        self.loss = nn.MSELoss()
+        
+    def forward(self, A, X, target, num_nodes=None, eval=False, node_labels=None):
+        X_ = None
+        if num_nodes is None:
+            num_nodes = self.num_nodes
+        for i in range(len(A)):
+            edge_index, edge_weight = A[i][0], A[i][1]
+            #print(edge_index.size(), edge_weight.size(), X.size())
+            X1 = self.relu(self.gcn(X,edge_index=edge_index.detach(), edge_weight=edge_weight))
+            if X_ is None:
+                X_ = X1
+            else:
+                X_ = torch.cat((X_, X1), dim=1)
+        y = self.linear(X_)
+        #print(y.size(), target.size())
+        #exit()
+        mse_error = MSE(y, target)
+        if eval:
+            return y
+        else:
+            if self.args.dataset == 'PPI':
+                loss = self.loss(self.m(y), target)
+            else:
+                loss = self.loss(y, target)
+        return loss, mse_error, y, X_
+
+
 class GTN(nn.Module):
     
     def __init__(self, num_edge, num_channels, w_in, w_out, num_nodes, num_layers, args=None):
@@ -29,6 +69,10 @@ class GTN(nn.Module):
         self.layers = nn.ModuleList(layers)
         self.loss = nn.L1Loss()
         self.gcn = GCNConv(in_channels=self.w_in, out_channels=w_out, args=args)
+        #self.gcn_layes = []
+        #for i in range(self.num_channels):
+        #    self.gcn_layes.append(GCNConv(in_channels=self.w_in, out_channels=w_out, args=args))
+        #self.gcn = nn.ModuleList(self.gcn_layes)
         self.linear = nn.Linear(self.w_out*self.num_channels, self.num_class)
         self.fun = nn.LeakyReLU(0.2)
 
@@ -69,9 +113,11 @@ class GTN(nn.Module):
         for i in range(self.num_channels):
             edge_index, edge_weight = H[i][0], H[i][1]
             if i==0:                
-                X_ = self.gcn(X,edge_index=edge_index.detach(), edge_weight=edge_weight)
+                #X_ = self.gcn[i](X,edge_index=edge_index.detach(), edge_weight=edge_weight)
+                X_ = F.relu(self.gcn(X,edge_index=edge_index.detach(), edge_weight=edge_weight))
                 X_ = F.relu(X_)
             else:
+                #X_tmp = F.relu(self.gcn[i](X,edge_index=edge_index.detach(), edge_weight=edge_weight))
                 X_tmp = F.relu(self.gcn(X,edge_index=edge_index.detach(), edge_weight=edge_weight))
                 X_ = torch.cat((X_,X_tmp), dim=1)
         y = self.fun(self.linear(X_))

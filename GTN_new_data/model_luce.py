@@ -92,7 +92,7 @@ class LUCE(nn.Module):
         self.lstm = nn.LSTM(input_size=self.w_out*self.num_channels, hidden_size=self.hidden_dim, num_layers=lstm_layers)
         # self.linear_gcn = nn.Linear(hidden_dim, gcn_input_dim)  # 暂时输入输入维度一致，后续可再调整
         self.LeakyReLU = nn.LeakyReLU(0.2)
-        self.linear = nn.Linear(self.w_out*2, self.num_class)
+        self.linear = nn.Linear(128, self.num_class)
 
     def normalization(self, H, num_nodes):
         norm_H = []
