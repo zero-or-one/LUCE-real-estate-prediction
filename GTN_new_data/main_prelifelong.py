@@ -26,7 +26,7 @@ if __name__ == '__main__':
                         help='Dataset', default='REALESTATE')
     parser.add_argument('--epoch', type=int, default=3000,
                         help='Training Epochs')
-    parser.add_argument('--node_dim', type=int, default=64,
+    parser.add_argument('--node_dim', type=int, default=256,
                         help='hidden dimensions')
     parser.add_argument('--num_channels', type=int, default=2,
                         help='number of channels')
@@ -34,8 +34,8 @@ if __name__ == '__main__':
                         help='learning rate')
     parser.add_argument('--lr_decay', type=int, default=0.1, help='learning rate decay')
     parser.add_argument('--lr_decay_step', type=int, default=1000, help='learning rate decay step')
-    parser.add_argument("--batch_size", type=int, default=128, help="batch size")
-    parser.add_argument('--weight_decay', type=float, default=0.0005,
+    parser.add_argument("--batch_size", type=int, default=16, help="batch size")
+    parser.add_argument('--weight_decay', type=float, default=0.0001,
                         help='l2 reg')
     parser.add_argument('--num_layers', type=int, default=1,
                         help='number of GT/FastGT layers')
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     num_layers = args.num_layers
 
     A = []
-    adj_matrix1 = np.load('data/{}.npy'.format("adjacency"))#[:1]
+    adj_matrix1 = np.load('data/{}.npy'.format("adjacency"))[:1]
     adj_matrix = np.load('data/{}.npy'.format("adjacency_luce"))
 
     #print(adj_matrix1.shape, adj_matrix2.shape)
@@ -248,6 +248,7 @@ if __name__ == '__main__':
                 #print(len(a), a[0][0].shape, a[0][1].shape)
                 '''
                 a = []
+                '''
                 for i in range(len(adj_matrix)):
                     A = adj_matrix[i,batch:batch+batch_size,batch:batch+batch_size]
                     edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
@@ -255,19 +256,17 @@ if __name__ == '__main__':
                     #print(edge_index.shape, edge_weight.shape)
                     a.append((edge_index.to(device), edge_weight.to(device)))           
                 '''
-                # cut the edge_index and edge_weight into batches
-                for i in range(0, edge_index.shape[1], batch_size):
-                    a.append((edge_index[:,i:i+batch_size].to(device), edge_weight[i:i+batch_size].to(device)))
-                    break
-                '''
-                
-                #a.append((edge_index.to(device), edge_weight.to(device)))
-                
+                A = adj_matrix[:,batch:batch+batch_size,batch:batch+batch_size]
+                edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
+                edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
+                #print(edge_index.shape, edge_weight.shape)
+                a.append((edge_index.to(device), edge_weight.to(device)))  
+                num_nodes = edge_index.shape[1]              
                 
                 if args.model == 'FastGTN':
-                    loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size], epoch=epoch)
+                    loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size], num_nodes=num_nodes, epoch=epoch)
                 else:
-                    loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size])
+                    loss,train_mse,y_train,W = model(a, train_node_features[batch:batch+batch_size], train_target[batch:batch+batch_size], num_nodes=num_nodes)
                 loss.backward()
                 optimizer.step()
                 y_transform = scaler.inverse_transform(y_train.detach().cpu().numpy().reshape(-1,1))
@@ -315,23 +314,24 @@ if __name__ == '__main__':
                     a.append((A[i][0][:, start:end].to(device), A[i][1][start:end].to(device)))
                 '''
                 a = []
+                '''
                 for i in range(len(adj_matrix)):
                     A = adj_matrix[i,len(train_node_features)+batch:len(train_node_features)+batch+batch_size,len(train_node_features)+batch:len(train_node_features)+batch+batch_size]
                     edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
                     edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
                     a.append((edge_index.to(device), edge_weight.to(device)))
                 '''
-                # cut the edge_index and edge_weight into batches
-                for i in range(0, edge_index.shape[1], batch_size):
-                    a.append((edge_index[:,i:i+batch_size].to(device), edge_weight[i:i+batch_size].to(device)))
-                    break
-                '''
-
+                A = adj_matrix[:,len(train_node_features)+batch:len(train_node_features)+batch+batch_size,len(train_node_features)+batch:len(train_node_features)+batch+batch_size]
+                edge_index = torch.from_numpy(np.vstack(A.nonzero())).to(torch.long)
+                edge_weight = torch.from_numpy(A[A.nonzero()]).to(torch.float32)
+                #print(edge_index.shape, edge_weight.shape)
+                a.append((edge_index.to(device), edge_weight.to(device)))  
+                num_nodes = edge_index.shape[1]         
                 with torch.no_grad():
                     if args.model == 'FastGTN':
-                        val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size], epoch=epoch)
+                        val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size], num_nodes=num_nodes, epoch=epoch)
                     else:
-                        val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size])
+                        val_loss, val_mse, y_valid,_ = model.forward(a, valid_node_features[batch:batch+batch_size], valid_target[batch:batch+batch_size], num_nodes=num_nodes)
                 y_transform = scaler.inverse_transform(y_valid.detach().cpu().numpy().reshape(-1,1))
                 y_origin = scaler.inverse_transform(valid_target[batch:batch+batch_size].detach().cpu().numpy().reshape(-1,1))
                 mape = np.mean(np.abs((y_transform - y_origin) / y_origin))*100
